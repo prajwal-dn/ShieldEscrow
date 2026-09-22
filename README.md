@@ -1,202 +1,282 @@
-# TrustPay
+<div align="center">
 
-> A decentralized escrow platform built on Midnight Blockchain for secure peer-to-peer payments.
+# 🛡️ ShieldEscrow
 
-## Overview
+### Privacy-First Decentralized Escrow Platform
 
-TrustPay enables buyers and sellers to exchange payments securely using blockchain-powered escrow.
+**Secure peer-to-peer payments powered by the Midnight Blockchain — no intermediaries, no trust issues.**
 
-Instead of sending money directly to the seller, funds are locked inside a smart contract. The seller completes the work, and only after the buyer approves are the funds released.
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![MariaDB](https://img.shields.io/badge/MariaDB-13-003545?style=for-the-badge&logo=mariadb&logoColor=white)](https://mariadb.org/)
+[![Midnight](https://img.shields.io/badge/Midnight-Blockchain-7C3AED?style=for-the-badge)](https://midnight.network/)
+[![Hackathon](https://img.shields.io/badge/Midnight_×_MLH-Hackathon_2026-F59E0B?style=for-the-badge)](https://midnight.network/)
 
-This removes the need for intermediaries while increasing transparency and trust.
-
----
-
-## Features
-
-- Secure escrow creation
-- Midnight smart contract
-- Lace Wallet integration
-- Wallet authentication
-- Escrow dashboard
-- Escrow details page
-- Buyer approval flow
-- Blockchain-backed release flow
-- Spring Boot REST API
-- React frontend
+</div>
 
 ---
 
-## Tech Stack
+## 📖 Overview
 
-### Frontend
+**ShieldEscrow** is a decentralized escrow application that eliminates the need for trusted third parties in peer-to-peer transactions.
 
-- React
-- Vite
-- React Router
-- Axios
-- Tailwind CSS
+Instead of sending funds directly to a seller — which carries risk — ShieldEscrow **locks the funds inside a Midnight smart contract**. The seller completes the agreed work, and only after the buyer approves are the funds cryptographically released. This creates a trustless, transparent, and privacy-preserving payment flow.
 
-### Backend
-
-- Java
-- Spring Boot
-- REST APIs
-- H2 Database
-
-### Blockchain
-
-- Midnight Compact
-- Midnight SDK
-- Lace Wallet
-- DApp Connector API
+> Built for the **Midnight × MLH Hackathon 2026.**
 
 ---
 
-## Project Structure
+## ✨ Features
+
+| Feature | Description |
+|---|---|
+| 🔒 **Secure Escrow** | Funds locked in smart contract until buyer approval |
+| 🛡️ **Privacy-First** | Powered by Midnight's zero-knowledge blockchain |
+| 👛 **Lace Wallet** | Seamless wallet connect & transaction signing |
+| 📊 **Escrow Dashboard** | Real-time view of all active and released escrows |
+| ⚡ **Instant Release** | One-click approval triggers on-chain fund release |
+| 🗄️ **Persistent Storage** | MariaDB backend — data survives restarts |
+| 🔗 **REST API** | Clean Spring Boot API for all escrow operations |
+
+---
+
+## 🏗️ Tech Stack
+
+<table>
+<tr>
+<td valign="top" width="33%">
+
+### 🖥️ Frontend
+- **React 19** + Vite 8
+- **React Router v7**
+- **Axios** for API calls
+- **Tailwind CSS v4**
+- **Midnight DApp Connector API**
+
+</td>
+<td valign="top" width="33%">
+
+### ⚙️ Backend
+- **Java 21**
+- **Spring Boot 3.3**
+- **Spring Data JPA**
+- **MariaDB** (persistent)
+- **REST APIs**
+
+</td>
+<td valign="top" width="33%">
+
+### ⛓️ Blockchain
+- **Midnight Compact**
+- **Midnight SDK**
+- **Lace Wallet**
+- **DApp Connector API**
+
+</td>
+</tr>
+</table>
+
+---
+
+## 📁 Project Structure
 
 ```
-trustpay/
+ShieldEscrow/
 │
-├── frontend/
-│   ├── React UI
-│   ├── Wallet Integration
-│   └── Dashboard
+├── frontend/                  # React + Vite application
+│   ├── src/
+│   │   ├── components/        # Navbar, EscrowCard, WalletStatus, Loader
+│   │   ├── pages/             # Landing, Dashboard, CreateEscrow, EscrowDetails
+│   │   ├── context/           # Wallet context provider
+│   │   ├── services/          # Axios API service
+│   │   └── wallet/            # Lace wallet integration
+│   └── index.html
 │
-├── backend/
-│   ├── Spring Boot APIs
-│   ├── Escrow Management
-│   └── H2 Database
+├── trustpay/                  # Spring Boot backend
+│   └── src/main/java/
+│       ├── controller/        # EscrowController REST endpoints
+│       ├── service/           # EscrowService business logic
+│       ├── model/             # Escrow entity & EscrowStatus enum
+│       ├── repository/        # JPA repository
+│       ├── dto/               # Request/Response DTOs
+│       └── config/            # CORS & app configuration
 │
-└── trustpay-midnight/
-    ├── Compact Smart Contract
-    ├── Midnight SDK
-    └── Contract Deployment
+└── trustpay-midnight/         # Midnight smart contract
+    ├── contracts/             # Compact smart contract source
+    └── scripts/               # Deployment & interaction scripts
 ```
 
 ---
 
-## Current Workflow
+## 🔄 Escrow Flow
 
-```text
-Buyer
-    ↓
-Connect Lace Wallet
-    ↓
-Create Escrow
-    ↓
-Spring Boot API
-    ↓
-Midnight Smart Contract
-    ↓
-Escrow Stored
-    ↓
-Seller Completes Work
-    ↓
-Buyer Approves
-    ↓
-Wallet Signs Transaction
-    ↓
-Funds Released
+```
+Buyer connects Lace Wallet
+         │
+         ▼
+  Creates an Escrow
+  (amount, seller, description)
+         │
+         ▼
+Spring Boot API saves escrow to MariaDB
+         │
+         ▼
+Midnight Smart Contract locks the funds
+         │
+         ▼
+   Seller completes work
+         │
+         ▼
+    Buyer approves
+         │
+         ▼
+Wallet signs the release transaction
+         │
+         ▼
+      Funds Released ✅
 ```
 
 ---
 
-## Smart Contract
+## 🔌 API Reference
 
-Implemented in Midnight Compact.
-
-Current circuits:
-
-- createEscrow()
-- getStatus()
-- releaseEscrow()
-
-Each escrow stores:
-
-- Buyer
-- Seller
-- Amount
-- Description
-- Status
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/escrows` | Fetch all escrows |
+| `POST` | `/api/escrows` | Create a new escrow |
+| `GET` | `/api/escrows/{id}` | Get escrow by ID |
+| `POST` | `/api/escrows/{id}/complete` | Mark work as completed |
+| `POST` | `/api/escrows/{id}/approve` | Approve & release funds |
 
 ---
 
-## Frontend
+## ⛓️ Smart Contract
 
-- Landing Page
-- Dashboard
-- Create Escrow
-- Escrow Details
-- Wallet Connect
-- Wallet Address Display
+Written in **Midnight Compact**, the smart contract manages the entire escrow lifecycle on-chain.
 
----
-
-## Backend APIs
-
+**Circuits:**
 ```
-POST /api/escrows
-GET /api/escrows
-GET /api/escrows/{id}
+createEscrow(buyer, seller, amount, description)
+getStatus(escrowId)
+releaseEscrow(escrowId)
 ```
 
----
+**On-chain fields per escrow:**
 
-## Wallet Integration
-
-- Detect Lace Wallet
-- Connect Wallet
-- Display wallet address
-- Prepare transaction signing flow
-
----
-
-## Current Progress
-
-### Completed
-
-- React frontend
-- Spring Boot backend
-- Midnight smart contract
-- Wallet connection
-- Dashboard
-- Escrow CRUD
-- Smart contract compilation
-
-### In Progress
-
-- Smart contract deployment
-- Spring Boot ↔ Midnight SDK integration
-- Live blockchain transaction execution
+| Field | Type | Description |
+|---|---|---|
+| `buyer` | `Address` | Buyer's wallet address |
+| `seller` | `Address` | Seller's wallet address |
+| `amount` | `Uint64` | Locked amount in tDUST |
+| `description` | `String` | Work description |
+| `status` | `Enum` | CREATED → COMPLETED → RELEASED |
 
 ---
 
-## Team
+## 🚀 Getting Started
 
-### Ishika Thakur
+### Prerequisites
 
-- Backend
-- Smart Contracts
-- Midnight SDK Integration
-- Spring Boot
-
-### Vaishali
-
-- React Frontend
-- Wallet Integration
-- UI/UX
+- **Node.js** v18+
+- **Java 21** (Eclipse Temurin recommended)
+- **MariaDB** or **MySQL**
+- **Lace Wallet** browser extension
 
 ---
 
-## Future Enhancements
+### 1. Clone the repository
 
-- Multi-escrow support
-- Transaction history
-- Notifications
-- Multi-wallet support
-- Production deployment
+```bash
+git clone https://github.com/prajwal-dn/ShieldEscrow.git
+cd ShieldEscrow
+```
+
+### 2. Set up the database
+
+```sql
+CREATE DATABASE shieldescrow CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+### 3. Configure the backend
+
+```bash
+cd trustpay/src/main/resources
+cp application.properties.example application.properties
+```
+
+Edit `application.properties` and fill in your database credentials:
+
+```properties
+spring.datasource.url=jdbc:mariadb://localhost:3306/shieldescrow
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+```
+
+### 4. Start the backend
+
+```bash
+cd trustpay
+./mvnw spring-boot:run
+```
+
+Backend runs at → `http://localhost:8080`
+
+### 5. Start the frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend runs at → `http://localhost:5173`
 
 ---
 
-Built for the Midnight x MLH Hackathon 2026.
+## 📊 Current Status
+
+### ✅ Completed
+- [x] React frontend with full routing
+- [x] Spring Boot REST API
+- [x] MariaDB persistent storage
+- [x] Lace Wallet integration
+- [x] Escrow dashboard & CRUD
+- [x] Smart contract (Midnight Compact)
+- [x] Smart contract compilation
+
+### 🔄 In Progress
+- [ ] Smart contract deployment to Midnight testnet
+- [ ] Spring Boot ↔ Midnight SDK live integration
+- [ ] On-chain transaction execution
+
+### 🔮 Planned
+- [ ] Transaction history & audit log
+- [ ] Email / push notifications
+- [ ] Multi-wallet support
+- [ ] Dispute resolution mechanism
+- [ ] Production deployment
+
+---
+
+## 👥 Team
+
+| Name | Role |
+|---|---|
+| **Ishika Thakur** | Backend · Smart Contracts · Midnight SDK · Spring Boot |
+| **Vaishali** | React Frontend · Wallet Integration · UI/UX |
+
+---
+
+## 📄 License
+
+This project was built for the **Midnight × MLH Hackathon 2026**.
+
+---
+
+<div align="center">
+
+Made with ❤️ for the **Midnight × MLH Hackathon 2026**
+
+**[View on GitHub](https://github.com/prajwal-dn/ShieldEscrow)**
+
+</div>
