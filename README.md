@@ -10,7 +10,6 @@
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![MariaDB](https://img.shields.io/badge/MariaDB-13-003545?style=for-the-badge&logo=mariadb&logoColor=white)](https://mariadb.org/)
 [![Midnight](https://img.shields.io/badge/Midnight-Blockchain-7C3AED?style=for-the-badge)](https://midnight.network/)
-[![Hackathon](https://img.shields.io/badge/Midnight_×_MLH-Hackathon_2026-F59E0B?style=for-the-badge)](https://midnight.network/)
 
 </div>
 
@@ -22,7 +21,7 @@
 
 Instead of sending funds directly to a seller — which carries risk — ShieldEscrow **locks the funds inside a Midnight smart contract**. The seller completes the agreed work, and only after the buyer approves are the funds cryptographically released. This creates a trustless, transparent, and privacy-preserving payment flow.
 
-> Built for the **Midnight × MLH Hackathon 2026.**
+
 
 ---
 
