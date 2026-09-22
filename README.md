@@ -258,10 +258,3 @@ Frontend runs at → `http://localhost:5173`
 
 ---
 
-<div align="center">
-
-Made with ❤️ for the **Midnight × MLH Hackathon 2026**
-
-**[View on GitHub](https://github.com/prajwal-dn/ShieldEscrow)**
-
-</div>
