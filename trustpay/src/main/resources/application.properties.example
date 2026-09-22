@@ -1,0 +1,24 @@
+# Application name
+spring.application.name=shieldescrow
+
+# -----------------------------------------------
+# MariaDB / MySQL Database Configuration
+# Copy this file to application.properties and fill in your credentials
+# -----------------------------------------------
+spring.datasource.url=jdbc:mariadb://localhost:3306/shieldescrow?useSSL=false&serverTimezone=UTC
+spring.datasource.driverClassName=org.mariadb.jdbc.Driver
+spring.datasource.username=your_db_username
+spring.datasource.password=your_db_password
+
+# -----------------------------------------------
+# JPA / Hibernate
+# -----------------------------------------------
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# -----------------------------------------------
+# Logging
+# -----------------------------------------------
+logging.level.org.springframework.web=DEBUG

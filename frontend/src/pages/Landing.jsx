@@ -20,7 +20,7 @@ function Landing() {
           padding: "20px 60px",
         }}
       >
-        <h2 style={{ color: "#38bdf8" }}>TrustPay</h2>
+        <h2 style={{ color: "#38bdf8" }}>ShieldEscrow</h2>
 
         <div style={{ display: "flex", gap: "20px" }}>
           <Link
@@ -59,7 +59,7 @@ function Landing() {
             marginBottom: "20px",
           }}
         >
-          TrustPay
+          ShieldEscrow
         </h1>
 
         <h2

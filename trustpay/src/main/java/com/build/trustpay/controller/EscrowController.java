@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/escrows") // This is the API route Vaishali's React app will call
-@CrossOrigin(origins = "http://localhost:5173") // Allows Vite/React frontend to connect
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"}) // Allows Vite/React frontend to connect
 public class EscrowController {
 
     private final EscrowService escrowService;

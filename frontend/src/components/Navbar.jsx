@@ -28,7 +28,7 @@ function Navbar() {
               fontSize: "30px",
             }}
           >
-            TrustPay
+            ShieldEscrow
           </h2>
         </Link>
       </div>
