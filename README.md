@@ -258,21 +258,6 @@ Frontend runs at → `http://localhost:5173`
 
 ---
 
-## 👥 Team
-
-| Name | Role |
-|---|---|
-| **Ishika Thakur** | Backend · Smart Contracts · Midnight SDK · Spring Boot |
-| **Vaishali** | React Frontend · Wallet Integration · UI/UX |
-
----
-
-## 📄 License
-
-This project was built for the **Midnight × MLH Hackathon 2026**.
-
----
-
 <div align="center">
 
 Made with ❤️ for the **Midnight × MLH Hackathon 2026**
