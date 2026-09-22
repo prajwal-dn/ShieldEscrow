@@ -1,0 +1,26 @@
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+
+struct Escrow {
+    buyer: Opaque<"string">;
+    seller: Opaque<"string">;
+    amount: Opaque<"string">;
+    description: Opaque<"string">;
+    status: Uint<8>;
+}
+
+export ledger escrows: Map<Uint<32>, Escrow>;
+
+export circuit testCreate(
+    b: Opaque<"string">
+): [] {
+
+    escrows[0] = Escrow {
+        buyer: disclose(b),
+        seller: disclose(b),
+        amount: disclose(b),
+        description: disclose(b),
+        status: 0
+    };
+}

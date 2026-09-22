@@ -1,0 +1,5 @@
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+
+export ledger testMap: Map<Uint<32>, Uint<8>>;

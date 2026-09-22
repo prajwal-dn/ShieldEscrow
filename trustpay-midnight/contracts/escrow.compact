@@ -1,0 +1,68 @@
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+
+
+struct Escrow {
+    buyer: Opaque<"string">;
+    seller: Opaque<"string">;
+    amount: Opaque<"string">;
+    description: Opaque<"string">;
+    status: Uint<8>;
+}
+
+
+// Auto increment ID
+export ledger nextEscrowId: Uint<32>;
+
+
+// All escrows stored here
+export ledger escrows: Map<Uint<32>, Escrow>;
+
+
+// Create new escrow
+export circuit createEscrow(
+    newBuyer: Opaque<"string">,
+    newSeller: Opaque<"string">,
+    newAmount: Opaque<"string">,
+    newDescription: Opaque<"string">
+): [] {
+
+    const escrow: Escrow = Escrow {
+        buyer: disclose(newBuyer),
+        seller: disclose(newSeller),
+        amount: disclose(newAmount),
+        description: disclose(newDescription),
+        status: 0
+    };
+
+    escrows.insert(nextEscrowId, escrow);
+
+    nextEscrowId = (nextEscrowId + 1) as Uint<32>;
+}
+
+
+// Get escrow status
+export circuit getStatus(
+    id: Uint<32>
+): Uint<8> {
+
+    const escrow = escrows.lookup(disclose(id));
+
+    return escrow.status;
+}
+
+// Release selected escrow
+export circuit releaseEscrow(
+    id: Uint<32>
+): [] {
+
+    const escrow = escrows.lookup(disclose(id));
+
+    const updatedEscrow: Escrow = Escrow {
+        ...escrow,
+        status: 2
+    };
+
+    escrows.insert(disclose(id), updatedEscrow);
+}
