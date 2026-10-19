@@ -1,0 +1,21 @@
+# Secrets — never commit
+.env
+*.seed
+*.key
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Build outputs & dependencies
+target/
+frontend/dist/
+frontend/node_modules/
+trustpay-midnight/dist/
+trustpay-midnight/node_modules/
+trustpay-midnight/.midnight-wallet-state/
+*.log
+build_output.txt
+pkg_output.txt

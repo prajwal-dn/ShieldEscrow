@@ -238,15 +238,15 @@ Frontend runs at → `http://localhost:5173`
 - [x] React frontend with full routing
 - [x] Spring Boot REST API
 - [x] MariaDB persistent storage
-- [x] Lace Wallet integration
+- [x] Lace Wallet DApp connector integration
 - [x] Escrow dashboard & CRUD
 - [x] Smart contract (Midnight Compact)
 - [x] Smart contract compilation
+- [x] Spring Boot ↔ Midnight SDK & DApp connector live integration
+- [x] On-chain transaction execution & persistence
 
 ### 🔄 In Progress
 - [ ] Smart contract deployment to Midnight testnet
-- [ ] Spring Boot ↔ Midnight SDK live integration
-- [ ] On-chain transaction execution
 
 ### 🔮 Planned
 - [ ] Transaction history & audit log

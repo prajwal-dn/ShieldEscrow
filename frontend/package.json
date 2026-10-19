@@ -1,4 +1,3 @@
-
 {
   "name": "frontend",
   "private": true,
@@ -12,12 +11,14 @@
   },
   "dependencies": {
     "@midnight-ntwrk/dapp-connector-api": "^4.0.1",
+    "@stomp/stompjs": "^7.3.0",
     "@tailwindcss/vite": "^4.3.2",
     "axios": "^1.18.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-icons": "^5.7.0",
     "react-router-dom": "^7.18.1",
+    "sockjs-client": "^1.6.1",
     "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
@@ -28,4 +29,3 @@
     "vite": "^8.1.1"
   }
 }
-

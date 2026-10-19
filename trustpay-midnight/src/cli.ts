@@ -1,5 +1,5 @@
 /**
- * CLI for interacting with trustpay-midnight contract
+ * CLI for interacting with trustpay-midnight Escrow contract
  */
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
@@ -7,7 +7,6 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { WebSocket } from 'ws';
-import { Buffer } from 'buffer';
 
 // Midnight SDK imports
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
@@ -17,15 +16,14 @@ import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-pri
 import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
 import { resolveNetwork, getOrCreateSeed, getDeployment } from './network';
 import { createWallet, persistWalletState, unshieldedToken, type WalletContext } from './wallet';
-import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
+import { CompiledContract } from '@midnight-ntwrk/compact-js';
 
 // Enable WebSocket for GraphQL subscriptions
 // @ts-expect-error Required for wallet sync
 globalThis.WebSocket = WebSocket;
 
-// Must match the privateStateId used at deploy time so the CLI reconnects to
-// the same private state. The hello-world contract has no witnesses (empty state).
-const PRIVATE_STATE_ID = 'escrowPrivateState';
+// Must match the privateStateId used at deploy time so the CLI reconnects to the same private state.
+const PRIVATE_STATE_ID = 'escrowState';
 const { network, config: networkConfig } = resolveNetwork();
 const SEED = getOrCreateSeed(network);
 
@@ -47,9 +45,9 @@ if (!fs.existsSync(contractPath)) {
   process.exit(1);
 }
 
-const HelloWorld = await import(pathToFileURL(contractPath).href);
+const EscrowContract = await import(pathToFileURL(contractPath).href);
 
-const compiledContract = CompiledContract.make('hello-world', HelloWorld.Contract).pipe(
+const compiledContract = CompiledContract.make('escrow', EscrowContract.Contract).pipe(
   CompiledContract.withVacantWitnesses,
   CompiledContract.withCompiledFileAssets(zkConfigPath),
 );
@@ -57,19 +55,12 @@ const compiledContract = CompiledContract.make('hello-world', HelloWorld.Contrac
 // ─── Providers ─────────────────────────────────────────────────────────────────
 
 async function createProviders(walletCtx: WalletContext) {
-  // The SDK requires the private-state password to be at least 16 characters.
-  // The default below is a placeholder for local devnet only — set a strong
-  // password via PRIVATE_STATE_PASSWORD when you move to a non-local target.
   const privateStatePassword = process.env.PRIVATE_STATE_PASSWORD?.trim() || 'Local-Devnet-Development-Placeholder-1';
 
   const walletProvider = {
-    // In Midnight.js 4.1.x the WalletProvider interface returns the key objects
-    // (CoinPublicKey / EncPublicKey) directly — no longer hex strings.
     getCoinPublicKey: () => walletCtx.shieldedSecretKeys.coinPublicKey,
     getEncryptionPublicKey: () => walletCtx.shieldedSecretKeys.encryptionPublicKey,
     async balanceTx(tx: any, ttl?: Date) {
-      // balanceUnboundTransaction -> finalizeRecipe is the complete balancing
-      // path in wallet-sdk 1.x; the earlier explicit signRecipe step is gone.
       const recipe = await walletCtx.wallet.balanceUnboundTransaction(
         tx,
         { shieldedSecretKeys: walletCtx.shieldedSecretKeys, dustSecretKey: walletCtx.dustSecretKey },
@@ -85,7 +76,7 @@ async function createProviders(walletCtx: WalletContext) {
 
   return {
     privateStateProvider: levelPrivateStateProvider({
-      privateStateStoreName: 'hello-world-state',
+      privateStateStoreName: 'escrow-state',
       accountId,
       privateStoragePasswordProvider: () => privateStatePassword,
     }),
@@ -97,11 +88,19 @@ async function createProviders(walletCtx: WalletContext) {
   };
 }
 
+// Status labels
+const ESCROW_STATUS_LABELS: Record<number, string> = {
+  0: 'CREATED',
+  1: 'FUNDED',
+  2: 'RELEASED',
+  3: 'DISPUTED',
+};
+
 // ─── Main CLI ──────────────────────────────────────────────────────────────────
 
 async function main() {
   console.log('\n╔══════════════════════════════════════════════════════════════╗');
-  console.log('║                   trustpay-midnight CLI                           ║');
+  console.log('║                   TrustPay Midnight CLI                      ║');
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
   const rl = createInterface({ input: stdin, output: stdout });
@@ -137,15 +136,10 @@ async function main() {
     clearInterval(syncInterval);
     process.stdout.write('\r  ✓ Synced with network.                                      \n');
 
-    // Persist sync state so the next run doesn't have to redo this work.
     await persistWalletState(network, walletCtx);
     const balance = state.unshielded.balances[unshieldedToken().raw] ?? 0n;
     console.log(`  Balance: ${balance.toLocaleString()} tNight\n`);
 
-    // Surface a faucet hint when a public-network wallet has 0 tNIGHT.
-    // Reads (option 2) work without funds, but writes (option 1) need DUST
-    // generated from registered NIGHT — without this hint the next failure
-    // mode is a confusing "Insufficient Funds" deep inside the tx builder.
     if (balance === 0n && network !== 'undeployed' && networkConfig.faucet) {
       const address = walletCtx.unshieldedKeystore.getBech32Address();
       console.log('  ⚠ Wallet has no tNight. Fund it from the faucet to send transactions:');
@@ -153,7 +147,6 @@ async function main() {
       console.log(`     Wallet address: ${address}\n`);
     }
 
-    // Setup providers and connect to contract
     console.log('  Connecting to contract...');
     const providers = await createProviders(walletCtx);
 
@@ -166,24 +159,28 @@ async function main() {
 
     console.log('  ✅ Connected!\n');
 
-    // Interactive CLI loop
     let running = true;
     while (running) {
       console.log('─── Menu ───────────────────────────────────────────────────────');
-      console.log('  1. Store a message');
-      console.log('  2. Read current message');
-      console.log('  3. Check wallet balance');
-      console.log('  4. Exit\n');
+      console.log('  1. Create Escrow');
+      console.log('  2. Query Escrow Status / Ledger');
+      console.log('  3. Release Escrow');
+      console.log('  4. Check wallet balance');
+      console.log('  5. Exit\n');
 
       const choice = await rl.question('  Your choice: ');
 
       switch (choice.trim()) {
         case '1': {
-          const message = await rl.question('  Enter your message: ');
-          console.log('\n  Submitting transaction (this may take 30-60 seconds)...');
+          const buyer = await rl.question('  Buyer Address: ');
+          const seller = await rl.question('  Seller Address: ');
+          const amount = await rl.question('  Amount (e.g. 50 ADA / tNight): ');
+          const description = await rl.question('  Description: ');
+
+          console.log('\n  Submitting createEscrow transaction (this may take 30-60 seconds)...');
           try {
-            const tx = await deployed.callTx.storeMessage(message);
-            console.log(`\n  ✅ Message stored: "${message}"`);
+            const tx = await deployed.callTx.createEscrow(buyer, seller, amount, description);
+            console.log(`\n  ✅ Escrow created successfully!`);
             console.log(`  Transaction ID: ${tx.public.txId}`);
             console.log(`  Block height: ${tx.public.blockHeight}\n`);
           } catch (error) {
@@ -193,23 +190,67 @@ async function main() {
         }
 
         case '2': {
-          console.log('\n  Reading message from blockchain...');
+          console.log('\n  Querying escrow ledger from blockchain...');
           try {
             const contractState = await providers.publicDataProvider.queryContractState(deployment.address);
             if (contractState) {
-              const ledgerState = HelloWorld.ledger(contractState.data);
-              const message = Buffer.from(ledgerState.message).toString();
-              console.log(`\n  📋 Current message: "${message}"\n`);
+              const ledgerState = EscrowContract.ledger(contractState.data);
+              const nextId = ledgerState.nextEscrowId !== undefined ? Number(ledgerState.nextEscrowId) : 0;
+              console.log(`\n  📋 Total Escrows Created: ${nextId}`);
+
+              const idInput = await rl.question('  Enter Escrow ID to inspect (or press Enter for summary): ');
+              if (idInput.trim()) {
+                const escrowId = BigInt(idInput.trim());
+                if (ledgerState.escrows && typeof ledgerState.escrows.lookup === 'function') {
+                  try {
+                    const esc = ledgerState.escrows.lookup(escrowId);
+                    if (esc) {
+                      const statusNum = Number(esc.status);
+                      const statusText = ESCROW_STATUS_LABELS[statusNum] || `UNKNOWN (${statusNum})`;
+                      console.log(`\n  ── Escrow #${idInput.trim()} Details ──`);
+                      console.log(`  Buyer:       ${esc.buyer}`);
+                      console.log(`  Seller:      ${esc.seller}`);
+                      console.log(`  Amount:      ${esc.amount}`);
+                      console.log(`  Description: ${esc.description}`);
+                      console.log(`  Status:      ${statusText} (${statusNum})\n`);
+                    } else {
+                      console.log(`\n  Escrow #${idInput.trim()} not found.\n`);
+                    }
+                  } catch (e) {
+                    console.log(`\n  Could not find escrow #${idInput.trim()}:`, e instanceof Error ? e.message : e);
+                  }
+                } else {
+                  console.log(`  (Ledger map format does not support direct lookup on this client version)\n`);
+                }
+              }
             } else {
-              console.log('\n  📋 No message found (contract state empty)\n');
+              console.log('\n  📋 Contract state is currently empty.\n');
             }
+          } catch (error) {
+            console.error('\n  ❌ Failed to query contract state:', error instanceof Error ? error.message : error);
+          }
+          break;
+        }
+
+        case '3': {
+          const idInput = await rl.question('  Enter Escrow ID to release: ');
+          if (!idInput.trim()) {
+            console.log('  Invalid escrow ID.');
+            break;
+          }
+          console.log(`\n  Submitting releaseEscrow for #${idInput.trim()} (this may take 30-60 seconds)...`);
+          try {
+            const tx = await deployed.callTx.releaseEscrow(BigInt(idInput.trim()));
+            console.log(`\n  ✅ Escrow #${idInput.trim()} released successfully!`);
+            console.log(`  Transaction ID: ${tx.public.txId}`);
+            console.log(`  Block height: ${tx.public.blockHeight}\n`);
           } catch (error) {
             console.error('\n  ❌ Failed:', error instanceof Error ? error.message : error);
           }
           break;
         }
 
-        case '3': {
+        case '4': {
           console.log('\n  Checking balance...');
           const currentState = await walletCtx.wallet.waitForSyncedState();
           const currentBalance = currentState.unshielded.balances[unshieldedToken().raw] ?? 0n;
@@ -219,13 +260,13 @@ async function main() {
           break;
         }
 
-        case '4':
+        case '5':
           running = false;
           console.log('\n  👋 Goodbye!\n');
           break;
 
         default:
-          console.log('\n  ❌ Invalid choice. Please enter 1-4.\n');
+          console.log('\n  ❌ Invalid choice. Please enter 1-5.\n');
       }
     }
 

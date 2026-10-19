@@ -38,6 +38,18 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Actuator — exposes /actuator/health for Docker healthcheck -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- WebSocket / STOMP — Phase 3 push notifications -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
         <!-- Spring Boot Testing tools -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

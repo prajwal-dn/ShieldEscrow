@@ -1,0 +1,97 @@
+version: "3.9"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ShieldEscrow — Production Compose Stack
+#
+#  Services:
+#    db       → MariaDB 11 (persistent named volume)
+#    backend  → Spring Boot REST API (port 8080)
+#    frontend → Nginx serving React + proxying /api/* to backend
+#
+#  Usage:
+#    docker compose up -d --build
+#    docker compose logs -f backend
+#    docker compose down -v          ← also removes the DB volume
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+services:
+
+  # ── 1. MariaDB ────────────────────────────────────────────────────────────
+  db:
+    image: mariadb:11
+    container_name: shield_db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootSecret123}
+      MARIADB_DATABASE:      ${DB_NAME:-shieldescrow}
+      MARIADB_USER:          ${DB_USER:-shielduser}
+      MARIADB_PASSWORD:      ${DB_PASSWORD:-Shield@1234}
+    volumes:
+      - shield_db_data:/var/lib/mysql
+    networks:
+      - shield_net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── 2. Spring Boot Backend ────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./trustpay
+      dockerfile: Dockerfile
+    container_name: shield_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Override the hardcoded localhost URL with the Docker service name
+      SPRING_DATASOURCE_URL:      jdbc:mariadb://db:3306/${DB_NAME:-shieldescrow}?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-shielduser}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-Shield@1234}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      # Restrict CORS to the frontend container hostname in production
+      SPRING_WEB_CORS_ALLOWED_ORIGINS: "http://frontend,http://localhost"
+      # Phase 3 — Midnight Testnet contract address (set after `npm run deploy`)
+      MIDNIGHT_CONTRACT_ADDRESS: ${MIDNIGHT_CONTRACT_ADDRESS:-}
+    ports:
+      - "8080:8080"        # expose for direct API testing; remove in full prod
+    networks:
+      - shield_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 40s
+
+  # ── 3. React Frontend (Nginx) ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: shield_frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"            # Main app — http://localhost
+    networks:
+      - shield_net
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Shared isolated network — containers talk by service name
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+networks:
+  shield_net:
+    driver: bridge
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Persistent DB volume — survives container restarts
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+volumes:
+  shield_db_data:

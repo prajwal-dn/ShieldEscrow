@@ -1,8 +1,10 @@
 import {
     FaCheckCircle,
     FaClock,
+    FaExclamationTriangle,
     FaLock,
     FaTimesCircle,
+    FaClipboardCheck,
 } from "react-icons/fa";
 
 function StatusBadge({ status }) {
@@ -20,9 +22,19 @@ function StatusBadge({ status }) {
       icon = <FaLock />;
       break;
 
+    case "COMPLETED":
+      badgeClass = "bg-purple-100 text-purple-700";
+      icon = <FaClipboardCheck />;
+      break;
+
     case "RELEASED":
       badgeClass = "bg-green-100 text-green-700";
       icon = <FaCheckCircle />;
+      break;
+
+    case "DISPUTED":
+      badgeClass = "bg-red-100 text-red-700";
+      icon = <FaExclamationTriangle />;
       break;
 
     case "CANCELLED":

@@ -7,4 +7,16 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  define: {
+    global: "globalThis",
+  },
+  server: {
+    // Proxy /api/* to Spring Boot during local development
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
+  },
 });

@@ -1,103 +1,58 @@
 import { useWallet } from "../context/WalletContext";
-import { connectWallet } from "../wallet/walletService";
-
 
 function WalletStatus() {
-
-  const {
-    connected,
-    setConnected,
-    setWallet,
-    address,
-    setAddress
-  } = useWallet();
-
-
-  const handleConnect = async () => {
-
-    try {
-
-      const wallet = await connectWallet();
-
-
-      setConnected(wallet.connected);
-
-      setWallet(wallet.api);
-
-      setAddress(wallet.address);
-
-
-    } catch(err) {
-
-      console.error("FULL WALLET ERROR:", err);
-
-      alert(err.message);
-
-    }
-
-  };
-
+  const { connected, address, initiateConnect, disconnect } = useWallet();
 
   return (
-    <div
-      style={{
-        display:"flex",
-        alignItems:"center",
-        gap:"12px",
-      }}
-    >
-
-      {
-        connected ? (
-
-          <>
-            <span
-              style={{
-                color:"#22c55e",
-                fontWeight:"bold",
-              }}
-            >
-              🟢 Connected
-            </span>
-
-
-            <span
-              style={{
-                color:"white",
-              }}
-            >
-              {address.substring(0,15)}...
-            </span>
-
-          </>
-
-
-        ) : (
-
+    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      {connected ? (
+        <>
+          <span style={{ color: "#22c55e", fontWeight: "bold" }}>
+            🟢 Connected
+          </span>
+          <span style={{ color: "white", fontSize: "0.85rem" }}>
+            {address.length > 18 ? address.substring(0, 18) + "…" : address}
+          </span>
           <button
-            onClick={handleConnect}
-
+            id="btn-disconnect-wallet"
+            onClick={disconnect}
             style={{
-              background:"#38bdf8",
-              color:"#0f172a",
-              border:"none",
-              padding:"10px 18px",
-              borderRadius:"8px",
-              cursor:"pointer",
-              fontWeight:"600",
+              background: "transparent",
+              border: "1px solid #ef4444",
+              color: "#ef4444",
+              padding: "6px 12px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              transition: "all 0.2s",
             }}
-
           >
-            Connect Wallet
+            Disconnect
           </button>
-
-        )
-      }
-
-
+        </>
+      ) : (
+        <button
+          id="btn-connect-wallet"
+          onClick={initiateConnect}
+          style={{
+            background: "linear-gradient(135deg, #38bdf8, #818cf8)",
+            color: "#0f172a",
+            border: "none",
+            padding: "10px 20px",
+            borderRadius: "10px",
+            cursor: "pointer",
+            fontWeight: "700",
+            fontSize: "0.9rem",
+            boxShadow: "0 4px 15px rgba(56,189,248,0.3)",
+            transition: "transform 0.15s, box-shadow 0.15s",
+          }}
+        >
+          Connect Wallet
+        </button>
+      )}
     </div>
   );
 }
-
 
 export default WalletStatus;

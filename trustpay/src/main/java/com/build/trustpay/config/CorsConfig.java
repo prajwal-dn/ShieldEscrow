@@ -14,10 +14,13 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins(
+                        .allowedOriginPatterns(
                                 "http://localhost:3000",
                                 "http://localhost:5173",
-                                "http://localhost:8081"
+                                "http://localhost:5174",
+                                "http://localhost:8081",
+                                "http://frontend",      // Docker service name
+                                "http://localhost"       // Nginx prod
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")

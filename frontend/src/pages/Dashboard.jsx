@@ -77,7 +77,7 @@ function Dashboard() {
         <div className="bg-slate-800 rounded-xl p-6 shadow">
           <p className="text-slate-400">Active</p>
           <h2 className="text-4xl font-bold text-blue-400 mt-2">
-            {escrows.filter(e => e.status === "ACTIVE").length}
+            {escrows.filter(e => ["CREATED", "FUNDED", "COMPLETED"].includes(e.status)).length}
           </h2>
         </div>
 

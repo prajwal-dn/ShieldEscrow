@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useWallet } from "../context/WalletContext";
 import api from "../services/api";
+import { submitTransaction } from "../services/escrowService";
 
 function CreateEscrow() {
+  const { address: walletAddress, connected } = useWallet();
+
   const [formData, setFormData] = useState({
     buyerAddress: "",
     sellerAddress: "",
@@ -11,6 +15,16 @@ function CreateEscrow() {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (connected && walletAddress && !formData.buyerAddress) {
+      setFormData((prev) => ({
+        ...prev,
+        buyerAddress: walletAddress,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, walletAddress]);
 
   const handleChange = (e) => {
     setFormData({
@@ -51,14 +65,23 @@ function CreateEscrow() {
     setLoading(true);
 
     try {
-      const response = await api.post("/api/escrows", formData);
+      // Execute on-chain funding transaction
+      const txResult = await submitTransaction(null, "create");
+      const txHash = txResult.txHash;
 
-      console.log("Escrow Created:", response.data);
+      const payload = {
+        ...formData,
+        txHash,
+      };
 
-      alert("Escrow Created Successfully!");
+      const response = await api.post("/api/escrows", payload);
+
+      console.log("Escrow Created on-chain & backend synced:", response.data);
+
+      alert(`Escrow Created & Locked On-Chain!\nTransaction Hash: ${txHash}`);
 
       setFormData({
-        buyerAddress: "",
+        buyerAddress: walletAddress || "",
         sellerAddress: "",
         amount: "",
         description: "",

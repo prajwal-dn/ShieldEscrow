@@ -1,0 +1,19 @@
+# ─────────────────────────────────────────────────────────────────
+#  docker-compose.override.yml
+#  Automatically merged by Docker Compose when running locally.
+#  Overrides that make local development easier:
+#    • Mounts source directly so you can rebuild without compose
+#    • Exposes DB port 3306 so DB tools (DBeaver, TablePlus) work
+# ─────────────────────────────────────────────────────────────────
+version: "3.9"
+
+services:
+  db:
+    ports:
+      - "3306:3306"    # allow direct DB access from host in dev
+
+  backend:
+    # Override logging level for dev verbosity
+    environment:
+      SPRING_JPA_SHOW_SQL: "true"
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB: DEBUG

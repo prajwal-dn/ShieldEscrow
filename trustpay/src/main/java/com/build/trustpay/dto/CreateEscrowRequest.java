@@ -8,6 +8,8 @@ public class CreateEscrowRequest {
     private String sellerAddress;
     private BigDecimal amount;
     private String description;
+    private String contractAddress;
+    private String txHash;
 
     // Default constructor is required by Spring Boot to automatically map JSON payloads into this Java object
     public CreateEscrowRequest() {}
@@ -17,6 +19,12 @@ public class CreateEscrowRequest {
         this.sellerAddress = sellerAddress;
         this.amount = amount;
         this.description = description;
+    }
+
+    public CreateEscrowRequest(String buyerAddress, String sellerAddress, BigDecimal amount, String description, String contractAddress, String txHash) {
+        this(buyerAddress, sellerAddress, amount, description);
+        this.contractAddress = contractAddress;
+        this.txHash = txHash;
     }
 
     public String getBuyerAddress() {
@@ -49,5 +57,21 @@ public class CreateEscrowRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getContractAddress() {
+        return contractAddress;
+    }
+
+    public void setContractAddress(String contractAddress) {
+        this.contractAddress = contractAddress;
+    }
+
+    public String getTxHash() {
+        return txHash;
+    }
+
+    public void setTxHash(String txHash) {
+        this.txHash = txHash;
     }
 }
