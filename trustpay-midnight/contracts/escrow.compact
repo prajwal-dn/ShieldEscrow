@@ -52,7 +52,7 @@ export circuit getStatus(
     return escrow.status;
 }
 
-// Release selected escrow
+// Release selected escrow to seller
 export circuit releaseEscrow(
     id: Uint<32>
 ): [] {
@@ -62,6 +62,36 @@ export circuit releaseEscrow(
     const updatedEscrow: Escrow = Escrow {
         ...escrow,
         status: 2
+    };
+
+    escrows.insert(disclose(id), updatedEscrow);
+}
+
+// Raise dispute on escrow
+export circuit disputeEscrow(
+    id: Uint<32>
+): [] {
+
+    const escrow = escrows.lookup(disclose(id));
+
+    const updatedEscrow: Escrow = Escrow {
+        ...escrow,
+        status: 3
+    };
+
+    escrows.insert(disclose(id), updatedEscrow);
+}
+
+// Refund selected escrow to buyer
+export circuit refundEscrow(
+    id: Uint<32>
+): [] {
+
+    const escrow = escrows.lookup(disclose(id));
+
+    const updatedEscrow: Escrow = Escrow {
+        ...escrow,
+        status: 4
     };
 
     escrows.insert(disclose(id), updatedEscrow);

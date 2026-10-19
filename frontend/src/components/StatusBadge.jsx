@@ -38,7 +38,8 @@ function StatusBadge({ status }) {
       break;
 
     case "CANCELLED":
-      badgeClass = "bg-red-100 text-red-700";
+    case "REFUNDED":
+      badgeClass = "bg-orange-100 text-orange-700";
       icon = <FaTimesCircle />;
       break;
 

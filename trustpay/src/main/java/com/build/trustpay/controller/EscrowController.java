@@ -70,6 +70,19 @@ public class EscrowController {
         return ResponseEntity.ok(escrowService.raiseDispute(id, raisedBy, reason));
     }
 
+    // ── Dispute Resolution Endpoint ───────────────────────────────────────
+    @PostMapping("/{id}/resolve-dispute")
+    public ResponseEntity<Escrow> resolveDispute(
+            @PathVariable Long id,
+            @RequestBody(required = false) ResolveDisputeRequest body) {
+        String resolver = body != null && body.resolverAddress != null ? body.resolverAddress : "arbitrator";
+        com.build.trustpay.model.EscrowStatus resolution = body != null && body.resolution != null
+                ? body.resolution
+                : com.build.trustpay.model.EscrowStatus.RELEASED;
+        String note = body != null ? body.note : null;
+        return ResponseEntity.ok(escrowService.resolveDispute(id, resolution, resolver, note));
+    }
+
     // ── Activity Log Endpoint ────────────────────────────────────────────
     @GetMapping("/{id}/events")
     public ResponseEntity<List<EscrowEvent>> getEvents(@PathVariable Long id) {
@@ -80,6 +93,13 @@ public class EscrowController {
     static class DisputeRequest {
         public String raisedBy;
         public String reason;
+    }
+
+    // DTO for dispute resolution
+    static class ResolveDisputeRequest {
+        public String resolverAddress;
+        public com.build.trustpay.model.EscrowStatus resolution; // RELEASED or REFUNDED
+        public String note;
     }
 
     // Simple DTO for actor identification on complete/approve

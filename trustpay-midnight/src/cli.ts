@@ -94,6 +94,7 @@ const ESCROW_STATUS_LABELS: Record<number, string> = {
   1: 'FUNDED',
   2: 'RELEASED',
   3: 'DISPUTED',
+  4: 'REFUNDED',
 };
 
 // ─── Main CLI ──────────────────────────────────────────────────────────────────
@@ -164,9 +165,11 @@ async function main() {
       console.log('─── Menu ───────────────────────────────────────────────────────');
       console.log('  1. Create Escrow');
       console.log('  2. Query Escrow Status / Ledger');
-      console.log('  3. Release Escrow');
-      console.log('  4. Check wallet balance');
-      console.log('  5. Exit\n');
+      console.log('  3. Release Escrow (to Seller)');
+      console.log('  4. Raise Dispute on Escrow');
+      console.log('  5. Refund Escrow (to Buyer)');
+      console.log('  6. Check wallet balance');
+      console.log('  7. Exit\n');
 
       const choice = await rl.question('  Your choice: ');
 
@@ -251,6 +254,42 @@ async function main() {
         }
 
         case '4': {
+          const idInput = await rl.question('  Enter Escrow ID to dispute: ');
+          if (!idInput.trim()) {
+            console.log('  Invalid escrow ID.');
+            break;
+          }
+          console.log(`\n  Submitting disputeEscrow for #${idInput.trim()} (this may take 30-60 seconds)...`);
+          try {
+            const tx = await deployed.callTx.disputeEscrow(BigInt(idInput.trim()));
+            console.log(`\n  ✅ Escrow #${idInput.trim()} marked DISPUTED!`);
+            console.log(`  Transaction ID: ${tx.public.txId}`);
+            console.log(`  Block height: ${tx.public.blockHeight}\n`);
+          } catch (error) {
+            console.error('\n  ❌ Failed:', error instanceof Error ? error.message : error);
+          }
+          break;
+        }
+
+        case '5': {
+          const idInput = await rl.question('  Enter Escrow ID to refund: ');
+          if (!idInput.trim()) {
+            console.log('  Invalid escrow ID.');
+            break;
+          }
+          console.log(`\n  Submitting refundEscrow for #${idInput.trim()} (this may take 30-60 seconds)...`);
+          try {
+            const tx = await deployed.callTx.refundEscrow(BigInt(idInput.trim()));
+            console.log(`\n  ✅ Escrow #${idInput.trim()} refunded to buyer successfully!`);
+            console.log(`  Transaction ID: ${tx.public.txId}`);
+            console.log(`  Block height: ${tx.public.blockHeight}\n`);
+          } catch (error) {
+            console.error('\n  ❌ Failed:', error instanceof Error ? error.message : error);
+          }
+          break;
+        }
+
+        case '6': {
           console.log('\n  Checking balance...');
           const currentState = await walletCtx.wallet.waitForSyncedState();
           const currentBalance = currentState.unshielded.balances[unshieldedToken().raw] ?? 0n;
@@ -260,13 +299,13 @@ async function main() {
           break;
         }
 
-        case '5':
+        case '7':
           running = false;
           console.log('\n  👋 Goodbye!\n');
           break;
 
         default:
-          console.log('\n  ❌ Invalid choice. Please enter 1-5.\n');
+          console.log('\n  ❌ Invalid choice. Please enter 1-7.\n');
       }
     }
 

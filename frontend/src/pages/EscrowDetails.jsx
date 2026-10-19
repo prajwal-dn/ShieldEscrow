@@ -27,6 +27,13 @@ function EscrowDetails() {
   const [disputeLoading, setDisputeLoading] = useState(false);
   const [disputeError, setDisputeError] = useState("");
 
+  // Dispute Resolution state
+  const [showResolveModal, setShowResolveModal] = useState(false);
+  const [resolveTarget, setResolveTarget] = useState("RELEASED");
+  const [resolveNote, setResolveNote] = useState("");
+  const [resolveLoading, setResolveLoading] = useState(false);
+  const [resolveError, setResolveError] = useState("");
+
   // Per-escrow WebSocket subscription — live updates when status changes
   const { lastNotification } = useEscrowNotifications(id);
 
@@ -63,7 +70,9 @@ function EscrowDetails() {
       return;
     }
     try {
-      const response = await api.post(`/api/escrows/${id}/complete`);
+      const response = await api.post(`/api/escrows/${id}/complete`, {
+        actorAddress: address || "seller",
+      });
       setEscrow(response.data);
     } catch (err) {
       console.error("Failed to mark work completed:", err);
@@ -82,7 +91,9 @@ function EscrowDetails() {
       setTransactionState("submitting");
       const txResult = await submitTransaction(id, "release");
       const generatedTxHash = txResult.txHash;
-      await api.post(`/api/escrows/${id}/approve`);
+      await api.post(`/api/escrows/${id}/approve`, {
+        actorAddress: address || "buyer",
+      });
       const syncResponse = await api.post(`/api/escrows/${id}/sync-onchain`, null, {
         params: { txHash: generatedTxHash, status: "RELEASED" },
       });
@@ -120,6 +131,30 @@ function EscrowDetails() {
     }
   };
 
+  // ── Resolve Dispute ────────────────────────────────────────────────────────
+  const handleResolveDispute = async () => {
+    if (!connected) { initiateConnect(); return; }
+    setResolveLoading(true);
+    setResolveError("");
+    try {
+      const response = await api.post(`/api/escrows/${id}/resolve-dispute`, {
+        resolverAddress: address || "arbitrator",
+        resolution: resolveTarget,
+        note: resolveNote || (resolveTarget === "RELEASED" ? "Funds released to seller following resolution" : "Funds refunded to buyer following resolution"),
+      });
+      setEscrow(response.data);
+      setShowResolveModal(false);
+      setResolveNote("");
+    } catch (err) {
+      console.error(err);
+      setResolveError(
+        err.response?.data?.message || "Failed to resolve dispute. Please check permissions."
+      );
+    } finally {
+      setResolveLoading(false);
+    }
+  };
+
   // ── Render States ──────────────────────────────────────────────────────────
   if (loading) return <Loader message="Loading Escrow..." />;
 
@@ -131,7 +166,7 @@ function EscrowDetails() {
     );
   }
 
-  const canRelease = escrow.status !== "RELEASED" && escrow.status !== "DISPUTED";
+  const canRelease = escrow.status !== "RELEASED" && escrow.status !== "REFUNDED" && escrow.status !== "DISPUTED";
   const canComplete = escrow.status === "CREATED" || escrow.status === "FUNDED";
 
   return (
@@ -234,6 +269,24 @@ function EscrowDetails() {
             </div>
           )}
 
+          {escrow.status === "REFUNDED" && (
+            <div
+              style={{
+                flex: 1,
+                padding: "16px",
+                borderRadius: "12px",
+                background: "rgba(249,115,22,0.12)",
+                border: "1px solid rgba(249,115,22,0.4)",
+                color: "#fb923c",
+                textAlign: "center",
+                fontWeight: 700,
+                fontSize: "1.1rem",
+              }}
+            >
+              🔄 Funds Refunded to Buyer
+            </div>
+          )}
+
           {/* Raise Dispute — only visible when escrow is active */}
           {ACTIVE_STATUSES.includes(escrow.status) && (
             <button
@@ -259,21 +312,45 @@ function EscrowDetails() {
             </button>
           )}
 
+          {/* Disputed State + Resolve Button */}
           {escrow.status === "DISPUTED" && (
-            <div
-              style={{
-                flex: 1,
-                padding: "16px",
-                borderRadius: "12px",
-                background: "rgba(248,113,113,0.1)",
-                border: "1px solid rgba(248,113,113,0.4)",
-                color: "#f87171",
-                textAlign: "center",
-                fontWeight: 700,
-                fontSize: "1rem",
-              }}
-            >
-              ⚠️ Dispute In Progress
+            <div style={{ display: "flex", gap: "12px", width: "100%", flexWrap: "wrap" }}>
+              <div
+                style={{
+                  flex: 1,
+                  padding: "16px",
+                  borderRadius: "12px",
+                  background: "rgba(248,113,113,0.1)",
+                  border: "1px solid rgba(248,113,113,0.4)",
+                  color: "#f87171",
+                  textAlign: "center",
+                  fontWeight: 700,
+                  fontSize: "1rem",
+                }}
+              >
+                ⚠️ Dispute In Progress
+              </div>
+              <button
+                id="btn-open-resolve-dispute"
+                onClick={() => {
+                  if (!connected) { initiateConnect(); return; }
+                  setShowResolveModal(true);
+                }}
+                style={{
+                  padding: "16px 28px",
+                  borderRadius: "12px",
+                  background: "linear-gradient(135deg, #0284c7, #0369a1)",
+                  border: "none",
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: "1rem",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  boxShadow: "0 4px 15px rgba(2,132,199,0.3)",
+                }}
+              >
+                ⚖️ Resolve Dispute
+              </button>
             </div>
           )}
         </div>
@@ -369,6 +446,147 @@ function EscrowDetails() {
               <button
                 id="btn-cancel-dispute"
                 onClick={() => { setShowDisputeModal(false); setDisputeError(""); }}
+                style={{
+                  flex: 1,
+                  padding: "14px",
+                  borderRadius: "10px",
+                  background: "transparent",
+                  border: "1px solid #334155",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Resolve Dispute Modal ─────────────────────────────────────────── */}
+      {showResolveModal && (
+        <div
+          style={{
+            position: "fixed", inset: 0,
+            background: "rgba(0,0,0,0.7)",
+            backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 9999,
+          }}
+          onClick={() => setShowResolveModal(false)}
+        >
+          <div
+            style={{
+              background: "linear-gradient(145deg, #1e293b, #0f172a)",
+              border: "1px solid rgba(56,189,248,0.3)",
+              borderRadius: "20px",
+              padding: "32px",
+              width: "min(500px, 92vw)",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ color: "#38bdf8", fontWeight: 700, fontSize: "1.5rem", marginBottom: "8px" }}>
+              ⚖️ Resolve Dispute
+            </h2>
+            <p style={{ color: "#94a3b8", fontSize: "0.9rem", marginBottom: "20px" }}>
+              Choose whether to release the escrowed funds to the seller or refund them to the buyer.
+            </p>
+
+            <div style={{ display: "flex", gap: "10px", marginBottom: "18px" }}>
+              <button
+                type="button"
+                id="btn-choose-release"
+                onClick={() => setResolveTarget("RELEASED")}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  borderRadius: "10px",
+                  background: resolveTarget === "RELEASED" ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.03)",
+                  border: `2px solid ${resolveTarget === "RELEASED" ? "#22c55e" : "#334155"}`,
+                  color: resolveTarget === "RELEASED" ? "#4ade80" : "#94a3b8",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontSize: "0.95rem",
+                  transition: "all 0.2s",
+                }}
+              >
+                💰 Release to Seller
+              </button>
+              <button
+                type="button"
+                id="btn-choose-refund"
+                onClick={() => setResolveTarget("REFUNDED")}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  borderRadius: "10px",
+                  background: resolveTarget === "REFUNDED" ? "rgba(249,115,22,0.2)" : "rgba(255,255,255,0.03)",
+                  border: `2px solid ${resolveTarget === "REFUNDED" ? "#f97316" : "#334155"}`,
+                  color: resolveTarget === "REFUNDED" ? "#fb923c" : "#94a3b8",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontSize: "0.95rem",
+                  transition: "all 0.2s",
+                }}
+              >
+                🔄 Refund to Buyer
+              </button>
+            </div>
+
+            <textarea
+              id="resolve-note-input"
+              value={resolveNote}
+              onChange={(e) => setResolveNote(e.target.value)}
+              placeholder="Resolution terms / arbitrator summary (e.g. Work verified according to agreement...)"
+              rows={3}
+              style={{
+                width: "100%", boxSizing: "border-box",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(56,189,248,0.3)",
+                borderRadius: "10px",
+                padding: "12px 14px",
+                color: "#f1f5f9",
+                fontSize: "0.9rem",
+                resize: "vertical",
+                outline: "none",
+                marginBottom: "16px",
+              }}
+            />
+
+            {resolveError && (
+              <p style={{ color: "#f87171", fontSize: "0.85rem", marginBottom: "12px" }}>
+                {resolveError}
+              </p>
+            )}
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                id="btn-confirm-resolve"
+                onClick={handleResolveDispute}
+                disabled={resolveLoading}
+                style={{
+                  flex: 1,
+                  padding: "14px",
+                  borderRadius: "10px",
+                  background: resolveLoading
+                    ? "rgba(56,189,248,0.3)"
+                    : "linear-gradient(135deg, #0284c7, #0369a1)",
+                  border: "none",
+                  color: "#fff",
+                  fontWeight: 700,
+                  cursor: resolveLoading ? "not-allowed" : "pointer",
+                  fontSize: "1rem",
+                  transition: "opacity 0.2s",
+                }}
+              >
+                {resolveLoading ? "Processing…" : `Confirm ${resolveTarget === "RELEASED" ? "Release" : "Refund"}`}
+              </button>
+              <button
+                id="btn-cancel-resolve"
+                onClick={() => { setShowResolveModal(false); setResolveError(""); }}
                 style={{
                   flex: 1,
                   padding: "14px",
