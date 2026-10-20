@@ -266,7 +266,3 @@ npm run cli       # Interactive CLI for creating and inspecting on-chain escrows
 | `VITE_API_URL` | Frontend | External backend URL (leave blank for same-origin serverless routing) |
 
 ---
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
