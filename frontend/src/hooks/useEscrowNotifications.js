@@ -18,7 +18,15 @@ import { useEffect, useRef, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
-const WS_URL = import.meta.env.VITE_WS_URL || "http://localhost:8080/ws";
+const getWsUrl = () => {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+  if (import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL.replace(/\/$/, "")}/ws`;
+  }
+  return "http://localhost:8080/ws";
+};
+
+const WS_URL = getWsUrl();
 
 export default function useEscrowNotifications(escrowId = null) {
   const [lastNotification, setLastNotification] = useState(null);
@@ -45,6 +53,9 @@ export default function useEscrowNotifications(escrowId = null) {
       },
       onStompError: (frame) => {
         console.warn("[WS] STOMP error:", frame.headers?.message);
+      },
+      onWebSocketError: (error) => {
+        console.warn("[WS] WebSocket error:", error);
       },
     });
 
