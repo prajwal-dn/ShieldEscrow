@@ -6,11 +6,14 @@
 
 **Secure peer-to-peer payments powered by the Midnight Blockchain — no intermediaries, no trust issues.**
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-shield--escrow.vercel.app-00C7B7?style=for-the-badge&logo=vercel&logoColor=white)](https://shield-escrow.vercel.app/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![MariaDB](https://img.shields.io/badge/MariaDB-13-003545?style=for-the-badge&logo=mariadb&logoColor=white)](https://mariadb.org/)
+[![MySQL / MariaDB](https://img.shields.io/badge/MySQL_/_MariaDB-Supported-003545?style=for-the-badge&logo=mysql&logoColor=white)](https://mariadb.org/)
 [![Midnight](https://img.shields.io/badge/Midnight-Blockchain-7C3AED?style=for-the-badge)](https://midnight.network/)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+
+🌐 **Live Deployment:** [https://shield-escrow.vercel.app](https://shield-escrow.vercel.app/)
 
 </div>
 
@@ -87,6 +90,7 @@ Instead of sending funds directly to a seller — which carries risk — ShieldE
 ShieldEscrow/
 │
 ├── frontend/                  # React + Vite application
+│   ├── api/                   # Serverless API routes (Direct MySQL/MariaDB database connection)
 │   ├── src/
 │   │   ├── components/        # Navbar, EscrowCard, WalletStatus, ActivityTimeline, NotificationToast, WalletPickerModal
 │   │   ├── pages/             # Landing, Dashboard, CreateEscrow, EscrowDetails

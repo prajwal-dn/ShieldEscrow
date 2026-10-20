@@ -20,7 +20,7 @@ import SockJS from "sockjs-client";
 
 const getWsUrl = () => {
   if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
-  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes("b4a.run")) {
+  if (import.meta.env.VITE_API_URL) {
     return `${import.meta.env.VITE_API_URL.replace(/\/$/, "")}/ws`;
   }
   if (typeof window !== "undefined" && window.location.protocol === "https:") {

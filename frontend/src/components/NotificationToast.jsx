@@ -32,19 +32,20 @@ export default function NotificationToast({ notification }) {
   useEffect(() => {
     if (!notification) return;
     const id = ++toastIdCounter;
+    const timers = timersRef.current;
     setToasts((prev) => [...prev, { ...notification, _toastId: id }]);
 
     // Auto-dismiss after 5 s — timer is stored in ref, not the cleanup
-    timersRef.current[id] = setTimeout(() => {
+    timers[id] = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t._toastId !== id));
-      delete timersRef.current[id];
+      delete timers[id];
     }, 5000);
 
     // Cleanup only this toast's timer on unmount, not on re-render
     return () => {
-      if (timersRef.current[id]) {
-        clearTimeout(timersRef.current[id]);
-        delete timersRef.current[id];
+      if (timers[id]) {
+        clearTimeout(timers[id]);
+        delete timers[id];
       }
     };
   }, [notification]);

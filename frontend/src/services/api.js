@@ -1,14 +1,10 @@
 import axios from "axios";
 
-// When deployed on Vercel: "" routes to Vercel Serverless /api/* (permanent & same-origin)
-// In Docker (Nginx proxy):  "" routes to Nginx proxy
-// In local dev (Vite):      "" routes to Vite dev proxy
+// Production (Vercel Serverless) / Docker proxy / local Vite proxy:
+// Default to "" to route requests to same-origin /api/*
+// Set VITE_API_URL only if pointing to an external dedicated backend service
 const getBaseUrl = () => {
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (!envUrl || envUrl.includes("b4a.run")) {
-    return "";
-  }
-  return envUrl;
+  return import.meta.env.VITE_API_URL || "";
 };
 
 const api = axios.create({
