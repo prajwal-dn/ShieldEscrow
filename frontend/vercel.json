@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/ws/:path*",
+      "destination": "https://YOUR_KOYEB_APP.koyeb.app/ws/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
