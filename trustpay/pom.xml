@@ -38,6 +38,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- MySQL Connector / J (supports jdbc:mysql:// URLs) -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Actuator — exposes /actuator/health for Docker healthcheck -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
