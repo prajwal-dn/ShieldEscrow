@@ -1,10 +1,18 @@
 import axios from "axios";
 
-// In production on Vercel: VITE_API_URL = https://shieldescrow-ivrn7x35.b4a.run
-// In Docker (Nginx proxy):  VITE_API_URL = "" → Nginx proxies /api/* to backend:8080
-// In local dev (Vite):      VITE_API_URL = "" → Vite proxy handles it (see vite.config.js)
+// When deployed on Vercel: "" routes to Vercel Serverless /api/* (permanent & same-origin)
+// In Docker (Nginx proxy):  "" routes to Nginx proxy
+// In local dev (Vite):      "" routes to Vite dev proxy
+const getBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl || envUrl.includes("b4a.run")) {
+    return "";
+  }
+  return envUrl;
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "",
+  baseURL: getBaseUrl(),
 });
 
 export default api;

@@ -20,8 +20,11 @@ import SockJS from "sockjs-client";
 
 const getWsUrl = () => {
   if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
-  if (import.meta.env.VITE_API_URL) {
+  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes("b4a.run")) {
     return `${import.meta.env.VITE_API_URL.replace(/\/$/, "")}/ws`;
+  }
+  if (typeof window !== "undefined" && window.location.protocol === "https:") {
+    return null;
   }
   return "http://localhost:8080/ws";
 };
@@ -33,6 +36,8 @@ export default function useEscrowNotifications(escrowId = null) {
   const clientRef = useRef(null);
 
   useEffect(() => {
+    if (!WS_URL) return;
+
     const topic = escrowId
       ? `/topic/escrows/${escrowId}`
       : "/topic/escrows";

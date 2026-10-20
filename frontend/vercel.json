@@ -1,11 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/ws/:path*",
-      "destination": "https://shieldescrow-ivrn7x35.b4a.run/ws/:path*"
-    },
-    {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]
