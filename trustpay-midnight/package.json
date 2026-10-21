@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "0.15.0",
-    "@midnight-ntwrk/ledger-v8": "8.0.3",
+    "@midnight-ntwrk/ledger-v8": "8.1.0",
     "@midnight-ntwrk/midnight-js-contracts": "4.0.4",
     "@midnight-ntwrk/midnight-js-http-client-proof-provider": "4.0.4",
     "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "4.0.4",
@@ -38,10 +38,11 @@
     "ws": "^8.19.0"
   },
   "overrides": {
-    "smoldot": "npm:@aspect-build/empty@0.0.0"
+    "smoldot": "npm:@aspect-build/empty@0.0.0",
+    "@midnight-ntwrk/ledger-v8": "8.1.0"
   },
   "resolutions": {
-    "@midnight-ntwrk/ledger-v8": "8.0.3",
+    "@midnight-ntwrk/ledger-v8": "8.1.0",
     "@midnight-ntwrk/midnight-js-network-id": "4.0.4",
     "@midnight-ntwrk/compact-runtime": "0.15.0"
   },
