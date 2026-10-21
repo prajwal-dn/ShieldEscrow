@@ -19,8 +19,11 @@ export function WalletProvider({ children }) {
 
       if (walletDef.network === "midnight" && typeof walletDef.connect === "function") {
         const api = await walletDef.connect("preprod");
-        const { unshieldedAddress } = await api.getUnshieldedAddress();
-        resolvedAddress = unshieldedAddress;
+        const addrRes = await api.getUnshieldedAddress?.();
+        resolvedAddress =
+          typeof addrRes === "string"
+            ? addrRes
+            : (addrRes?.unshieldedAddress || addrRes?.address || "");
         resolvedApi = api;
       } else if (walletDef.network === "cardano" && typeof walletDef.enable === "function") {
         const api = await walletDef.enable();

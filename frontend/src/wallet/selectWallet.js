@@ -9,12 +9,12 @@ export const listWallets = () => {
   const midnightInjected = window.midnight;
   if (midnightInjected && typeof midnightInjected === "object") {
     for (const [key, wallet] of Object.entries(midnightInjected)) {
-      if (wallet && typeof wallet.connect === "function") {
+      if (wallet && (typeof wallet.connect === "function" || typeof wallet.enable === "function")) {
         discovered.push({
           key,
-          name: wallet.name || key,
+          name: wallet.name || (key.toLowerCase().includes("lace") ? "Midnight Lace" : key),
           icon: wallet.icon || null,
-          connect: wallet.connect.bind(wallet),
+          connect: typeof wallet.connect === "function" ? wallet.connect.bind(wallet) : wallet.enable.bind(wallet),
           network: "midnight",
         });
       }
