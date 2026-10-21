@@ -201,19 +201,30 @@ async function main() {
 
     console.log('  Creating wallet...');
     const walletCtx = await createWallet(seed);
+    const address = walletCtx.unshieldedKeystore.getBech32Address();
+
+    console.log(`\n  Wallet Address: ${address}`);
+    console.log(`  Faucet: https://faucet.preprod.midnight.network/`);
+    console.log('  (You can already request test tokens from the faucet while it syncs!)\n');
 
     const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
     let frame = 0;
-    const syncSpinner = setInterval(() => {
-      process.stdout.write(`\r  ${frames[frame++ % frames.length]} Syncing with network (this may take 30-60 seconds)...`);
-    }, 80);
-    const state = await Rx.firstValueFrom(walletCtx.wallet.state().pipe(Rx.throttleTime(5000), Rx.filter((s) => s.isSynced)));
-    clearInterval(syncSpinner);
-    process.stdout.write('\r  ✓ Synced with network.                                      \n');
-    const address = walletCtx.unshieldedKeystore.getBech32Address();
+    const state = await Rx.firstValueFrom(
+      walletCtx.wallet.state().pipe(
+        Rx.throttleTime(1000),
+        Rx.tap((s: any) => {
+          const uSync = s.unshielded?.isSynced ? '✓ Synced' : 'Syncing...';
+          const sSync = s.shielded?.isSynced ? '✓ Synced' : 'Syncing...';
+          const dSync = s.dust?.isSynced ? '✓ Synced' : 'Syncing...';
+          process.stdout.write(
+            `\r  ${frames[frame++ % frames.length]} Syncing ledger: Unshielded [${uSync}] | Shielded [${sSync}] | DUST [${dSync}]   `
+          );
+        }),
+        Rx.filter((s) => s.isSynced),
+      ),
+    );
+    process.stdout.write('\r  ✓ Synced with network completely!                                          \n');
     const balance = state.unshielded.balances[unshieldedToken().raw] ?? 0n;
-
-    console.log(`\n  Wallet Address: ${address}`);
     console.log(`  Balance: ${balance.toLocaleString()} tNight\n`);
 
     // 2. Fund wallet if needed
