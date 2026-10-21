@@ -179,7 +179,7 @@ async function main() {
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
   // Check if contract is compiled
-  if (!fs.existsSync(path.join(zkConfigPath, 'contract', 'index.js'))) {
+  if (!fs.existsSync(contractPath)) {
     console.error('Contract not compiled! Run: npm run compile');
     process.exit(1);
   }
