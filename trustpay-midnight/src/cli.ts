@@ -36,8 +36,11 @@ const zkConfigPath = path.resolve(
   'escrow'
 );
 
-// Load compiled contract
-const contractPath = path.join(zkConfigPath, 'contract', 'index.js');
+// Load compiled contract (.cjs or .js)
+const contractFileName = fs.existsSync(path.join(zkConfigPath, 'contract', 'index.cjs'))
+  ? 'index.cjs'
+  : 'index.js';
+const contractPath = path.join(zkConfigPath, 'contract', contractFileName);
 
 // Check if contract is compiled
 if (!fs.existsSync(contractPath)) {
