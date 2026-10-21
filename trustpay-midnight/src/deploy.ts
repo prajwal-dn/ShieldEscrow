@@ -22,22 +22,24 @@ import { HDWallet, Roles, generateRandomSeed } from '@midnight-ntwrk/wallet-sdk-
 import { ShieldedWallet } from '@midnight-ntwrk/wallet-sdk-shielded';
 import { createKeystore, InMemoryTransactionHistoryStorage, PublicKey, UnshieldedWallet } from '@midnight-ntwrk/wallet-sdk-unshielded-wallet';
 import { CompiledContract } from '@midnight-ntwrk/compact-js';
-import { recordDeployment } from "./network";
+import { resolveNetwork, getOrCreateSeed, recordDeployment } from "./network";
 // Enable WebSocket for GraphQL subscriptions
 // @ts-expect-error Required for wallet sync
 globalThis.WebSocket = WebSocket;
 
-// Set network to preprod
-setNetworkId('preprod');
+// Resolve target network (defaults to undeployed local devnet, or flag --network)
+const { network, config: CONFIG } = resolveNetwork({ argv: process.argv });
+setNetworkId(CONFIG.networkId);
 
-
-// Preprod network configuration
-const CONFIG = {
-  indexer: 'https://indexer.preprod.midnight.network/api/v4/graphql',
-  indexerWS: 'wss://indexer.preprod.midnight.network/api/v4/graphql/ws',
-  node: 'https://rpc.preprod.midnight.network',
-  proofServer: 'http://127.0.0.1:6300',
-};
+// If on preprod, attach Blockfrost project ID if provided via env
+if (network === 'preprod') {
+  const blockfrostId = process.env.BLOCKFROST_PROJECT_ID;
+  if (blockfrostId) {
+    CONFIG.indexer = `https://midnight-preprod.blockfrost.io/api/v0?project_id=${blockfrostId}`;
+    CONFIG.indexerWS = `wss://midnight-preprod.blockfrost.io/api/v0/ws?project_id=${blockfrostId}`;
+    CONFIG.node = `https://rpc.midnight-preprod.blockfrost.io?project_id=${blockfrostId}`;
+  }
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const zkConfigPath = path.resolve(
@@ -188,15 +190,20 @@ async function main() {
 
   try {
     // 1. Wallet setup
-    console.log('─── Step 1: Wallet Setup ───────────────────────────────────────\n');
-    const choice = await rl.question('  [1] Create new wallet\n  [2] Restore from seed\n  > ');
+    console.log(`─── Step 1: Wallet Setup (${network}) ─────────────────────────────\n`);
+    let seed: string;
+    if (network === 'undeployed') {
+      seed = getOrCreateSeed('undeployed');
+      console.log('  Using local devnet pre-funded genesis seed.\n');
+    } else {
+      const choice = await rl.question('  [1] Create new wallet\n  [2] Restore from seed\n  > ');
+      seed = choice.trim() === '2'
+        ? await rl.question('\n  Enter your 64-character seed: ')
+        : toHex(Buffer.from(generateRandomSeed()));
 
-    const seed = choice.trim() === '2'
-      ? await rl.question('\n  Enter your 64-character seed: ')
-      : toHex(Buffer.from(generateRandomSeed()));
-
-    if (choice.trim() !== '2') {
-      console.log(`\n  ⚠️  SAVE THIS SEED (you'll need it later):\n  ${seed}\n`);
+      if (choice.trim() !== '2') {
+        console.log(`\n  ⚠️  SAVE THIS SEED (you'll need it later):\n  ${seed}\n`);
+      }
     }
 
     console.log('  Creating wallet...');
@@ -204,8 +211,10 @@ async function main() {
     const address = walletCtx.unshieldedKeystore.getBech32Address();
 
     console.log(`\n  Wallet Address: ${address}`);
-    console.log(`  Faucet: https://faucet.preprod.midnight.network/`);
-    console.log('  (You can already request test tokens from the faucet while it syncs!)\n');
+    if (CONFIG.faucet) {
+      console.log(`  Faucet: ${CONFIG.faucet}`);
+      console.log('  (You can already request test tokens from the faucet while it syncs!)\n');
+    }
 
     const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
     let frame = 0;
@@ -298,11 +307,11 @@ async function main() {
     console.log(`  Contract Address: ${contractAddress}\n`);
 
     // 5. Save deployment info
-recordDeployment(
-    "preprod",
-    contractAddress,
-    address.toString()
-);
+    recordDeployment(
+      network,
+      contractAddress,
+      address.toString()
+    );
 
 console.log("Deployment saved.");
 
