@@ -263,6 +263,43 @@ npm run cli       # Interactive CLI for creating and inspecting on-chain escrows
 | `SPRING_DATASOURCE_USERNAME` | Backend | Database credentials |
 | `SPRING_DATASOURCE_PASSWORD` | Backend | Database credentials |
 | `MIDNIGHT_CONTRACT_ADDRESS` | Backend / Midnight | Deployed Midnight Compact contract address |
+| `BLOCKFROST_PROJECT_ID` | Midnight Preprod | Blockfrost API key for public Midnight Preprod indexer/RPC |
 | `VITE_API_URL` | Frontend | External backend URL (leave blank for same-origin serverless routing) |
 
 ---
+
+## 📋 Platform Audit & Implementation Roadmap (Unfinished / Planned Tasks)
+
+Following an end-to-end architectural scan of the frontend, backend serverless functions, database tier, and Midnight smart contract toolchain, below is the comprehensive audit of completed foundations versus remaining planned milestones for market launch:
+
+### 1. Identity & Account Management
+| Item | Current Status | Planned Implementation | Priority |
+|---|---|---|---|
+| **Gmail / Email Registration** | ✅ Client Auth & Standardized Issuance | Integrate Google OAuth 2.0 (Google Identity Services) for 1-click Gmail verification alongside current credential flow | High |
+| **Standardized User IDs** | ✅ Implemented (`USR-XXXXXX`, `BUY-XXXXXX`, `SEL-XXXXXX`) | Persist user profiles and standardized identities across cloud database tables (`users` relational schema) | High |
+| **Session & Token Auth** | ✅ Local secure storage session | Issue cryptographically signed JWT session tokens via edge middleware | Medium |
+
+### 2. Product Inspection & Acceptance Protocol
+| Item | Current Status | Planned Implementation | Priority |
+|---|---|---|---|
+| **Inspection Standards Tab** | ✅ Implemented in UI | Allow buyers and sellers to mutually sign off on inspection criteria prior to initial funding | High |
+| **Inspection Period Timer** | ✅ Stored (e.g. 72h window) | Background worker / cron job to automatically trigger release if buyer fails to raise objections before window expiry | High |
+| **Proof of Delivery Assets** | ✅ Metadata field captured | Decentralized attachment upload (IPFS / Arweave / S3) for inspection photos, signed receipts, and code archives | Medium |
+
+### 3. Midnight Smart Contract Integration
+| Item | Current Status | Planned Implementation | Priority |
+|---|---|---|---|
+| **Compact Contract Circuits** | ✅ 100% Compiled & Deployed on Ledger | Maintain circuit compatibility across upcoming Midnight ledger-v9 releases | Maintained |
+| **Proof Server Infrastructure** | ✅ Docker proof server verified | Deploy high-availability proof server container in cloud Kubernetes/ECS for production proof generation | High |
+| **Web Browser Wallet Direct Sign** | ⚠️ Dev/CIP-30 mode with CLI bridge | Implement native Midnight browser extension (Lace / Nightly Midnight) dApp connector once Midnight wallet APIs finalize on mainnet | High |
+| **Frontend-to-Midnight API Bridge** | ⚠️ Managed via TypeScript CLI / scripts | Expose a microservice endpoint connecting the web frontend directly to the Midnight proof server and indexer | High |
+
+### 4. Dispute Resolution & Platform Governance
+| Item | Current Status | Planned Implementation | Priority |
+|---|---|---|---|
+| **Dispute Filing & Reason Logging** | ✅ Fully functional on-chain & in DB | Multi-stage dispute escalation with buyer/seller rebuttal rounds | Medium |
+| **Arbitration Settlement** | ✅ Admin resolution modal | Decentralized arbitration panel (2-of-3 multi-signature settlement or Kleros integration) | Future |
+| **Transactional Email / SMS Alerts** | ⚠️ WebSocket real-time only | SendGrid / AWS SES email dispatch to buyer and seller on status transitions | Medium |
+
+---
+

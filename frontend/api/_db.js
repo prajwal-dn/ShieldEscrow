@@ -98,6 +98,9 @@ function rowToEscrow(r) {
     contractAddress: r.contract_address,
     txHash: r.tx_hash,
     onChainSynced: Boolean(r.on_chain_synced),
+    inspectionCriteria: r.inspection_criteria || null,
+    inspectionWindow: r.inspection_window || "72 Hours",
+    proofOfDelivery: r.proof_of_delivery || null,
     createdAt: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString(),
   };
 }
@@ -155,9 +158,21 @@ export async function createEscrow(data) {
     try {
       await initTables(p);
       const [result] = await p.query(
-        `INSERT INTO escrows (buyer_address, seller_address, amount, description, status, contract_address, tx_hash, on_chain_synced, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [data.buyerAddress, data.sellerAddress, data.amount, data.description, status, data.contractAddress || null, data.txHash || null, onChainSynced]
+        `INSERT INTO escrows (buyer_address, seller_address, amount, description, status, contract_address, tx_hash, on_chain_synced, inspection_criteria, inspection_window, proof_of_delivery, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          data.buyerAddress,
+          data.sellerAddress,
+          data.amount,
+          data.description,
+          status,
+          data.contractAddress || null,
+          data.txHash || null,
+          onChainSynced,
+          data.inspectionCriteria || null,
+          data.inspectionWindow || "72 Hours",
+          data.proofOfDelivery || null
+        ]
       );
       const id = result.insertId;
       await logEvent(id, "CREATED", data.buyerAddress, data.txHash, `Escrow created for ${data.description}`);
@@ -177,6 +192,9 @@ export async function createEscrow(data) {
     contractAddress: data.contractAddress || null,
     txHash: data.txHash || null,
     onChainSynced,
+    inspectionCriteria: data.inspectionCriteria || null,
+    inspectionWindow: data.inspectionWindow || "72 Hours",
+    proofOfDelivery: data.proofOfDelivery || null,
     createdAt: now,
   };
   inMemoryEscrows.push(newEscrow);

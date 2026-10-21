@@ -4,12 +4,14 @@ import CreateEscrow from "./pages/CreateEscrow.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import EscrowDetails from "./pages/EscrowDetails.jsx";
 import Landing from "./pages/Landing.jsx";
+import AuthModal from "./components/AuthModal.jsx";
 
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
 
 function App() {
   return (
     <BrowserRouter>
+      <AuthModal />
       <Routes>
         <Route path="/" element={<Landing />} />
 

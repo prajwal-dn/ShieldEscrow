@@ -16,6 +16,7 @@ function EscrowDetails() {
   const { connected, address, walletApi, initiateConnect } = useWallet();
 
   const [escrow, setEscrow] = useState(null);
+  const [activeTab, setActiveTab] = useState("overview"); // "overview" | "criteria" | "timeline"
   const [transactionState, setTransactionState] = useState("idle");
   const [transactionHash, setTransactionHash] = useState("");
   const [loading, setLoading] = useState(true);
@@ -170,199 +171,396 @@ function EscrowDetails() {
   const canComplete = escrow.status === "CREATED" || escrow.status === "FUNDED";
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-10">
+    <div className="min-h-screen bg-slate-900 text-white p-6 md:p-10">
       {/* Header */}
-      <div className="mb-10">
+      <div className="mb-8">
         <h1 className="text-4xl font-bold text-sky-400">Escrow Details</h1>
-        <p className="text-slate-400 mt-2">View and manage this escrow contract securely.</p>
+        <p className="text-slate-400 mt-2">View and manage this escrow contract and inspection standards securely.</p>
+      </div>
+
+      {/* Main Tabs Navigation */}
+      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid #334155", paddingBottom: "10px", flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab("overview")}
+          style={{
+            background: activeTab === "overview" ? "rgba(56, 189, 248, 0.15)" : "transparent",
+            color: activeTab === "overview" ? "#38bdf8" : "#94a3b8",
+            border: activeTab === "overview" ? "1px solid #38bdf8" : "1px solid transparent",
+            borderRadius: "8px",
+            padding: "10px 18px",
+            fontWeight: "700",
+            fontSize: "14px",
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+        >
+          📋 Overview & Settlement
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("criteria")}
+          style={{
+            background: activeTab === "criteria" ? "rgba(168, 85, 247, 0.15)" : "transparent",
+            color: activeTab === "criteria" ? "#c084fc" : "#94a3b8",
+            border: activeTab === "criteria" ? "1px solid #a855f7" : "1px solid transparent",
+            borderRadius: "8px",
+            padding: "10px 18px",
+            fontWeight: "700",
+            fontSize: "14px",
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+        >
+          ⚖️ Inspection & Judging Criteria
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("timeline")}
+          style={{
+            background: activeTab === "timeline" ? "rgba(52, 211, 153, 0.15)" : "transparent",
+            color: activeTab === "timeline" ? "#34d399" : "#94a3b8",
+            border: activeTab === "timeline" ? "1px solid #34d399" : "1px solid transparent",
+            borderRadius: "8px",
+            padding: "10px 18px",
+            fontWeight: "700",
+            fontSize: "14px",
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+        >
+          🕒 Audit Timeline
+        </button>
       </div>
 
       {/* Main Card */}
       <div className="max-w-3xl bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-700">
-        <h2 className="text-3xl font-bold mb-8">{escrow.description}</h2>
+        <h2 className="text-3xl font-bold mb-6">{escrow.description}</h2>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        {/* ── TAB 1: OVERVIEW & ACTIONS ── */}
+        {activeTab === "overview" && (
           <div>
-            <p className="text-slate-400 text-sm mb-1">Buyer Wallet</p>
-            <p className="break-all">{escrow.buyerAddress}</p>
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm mb-1">Seller Wallet</p>
-            <p className="break-all">{escrow.sellerAddress}</p>
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm mb-1">Amount</p>
-            <p className="text-2xl font-bold text-green-400">{escrow.amount}</p>
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm mb-1">Status</p>
-            <StatusBadge status={escrow.status} />
-          </div>
-          <div className="md:col-span-2">
-            <p className="text-slate-400 text-sm mb-1">Created At</p>
-            <p>{escrow.createdAt}</p>
-          </div>
-        </div>
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              <div>
+                <p className="text-slate-400 text-sm mb-1 font-semibold">Buyer Identifier</p>
+                <p className="break-all font-mono text-sky-300 font-medium">{escrow.buyerAddress}</p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-sm mb-1 font-semibold">Seller Identifier</p>
+                <p className="break-all font-mono text-purple-300 font-medium">{escrow.sellerAddress}</p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-sm mb-1 font-semibold">Locked Escrow Capital</p>
+                <p className="text-2xl font-bold text-green-400">{escrow.amount} ADA / tNight</p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-sm mb-1 font-semibold">Protocol State</p>
+                <StatusBadge status={escrow.status} />
+              </div>
+              <div>
+                <p className="text-slate-400 text-sm mb-1 font-semibold">Inspection Window</p>
+                <p className="text-slate-200 font-medium">{escrow.inspectionWindow || "72 Hours"}</p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-sm mb-1 font-semibold">Created Timestamp</p>
+                <p className="text-slate-300 text-sm">{escrow.createdAt}</p>
+              </div>
+            </div>
 
-        <hr className="border-slate-700 my-8" />
+            <hr className="border-slate-700 my-8" />
 
-        {/* Wallet warning */}
-        {!connected && (
-          <div className="mb-5 rounded-xl border border-yellow-500 bg-yellow-500/10 p-4 text-yellow-300">
-            🔒 Connect your Midnight wallet to interact with this escrow.
+            {/* Wallet warning */}
+            {!connected && (
+              <div className="mb-5 rounded-xl border border-yellow-500 bg-yellow-500/10 p-4 text-yellow-300">
+                🔒 Connect your Midnight wallet to interact with this escrow.
+              </div>
+            )}
+
+            {/* ── Action Buttons ── */}
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              {/* Complete Work */}
+              {canComplete && (
+                <button
+                  id="btn-complete-work"
+                  onClick={handleCompleteWork}
+                  className="flex-1 py-4 rounded-xl font-semibold text-lg transition bg-purple-500 hover:bg-purple-600"
+                >
+                  {!connected ? "Connect Wallet to Complete" : "✅ Mark Work Completed"}
+                </button>
+              )}
+
+              {/* Release Funds */}
+              {canRelease && (
+                <button
+                  id="btn-release-funds"
+                  onClick={handleReleaseFunds}
+                  disabled={
+                    transactionState === "waiting-signature" ||
+                    transactionState === "submitting"
+                  }
+                  className={`flex-1 py-4 rounded-xl font-semibold text-lg transition ${
+                    connected
+                      ? "bg-sky-500 hover:bg-sky-600"
+                      : "bg-slate-600 hover:bg-sky-700"
+                  }`}
+                >
+                  {!connected
+                    ? "Connect Wallet to Release"
+                    : transactionState === "waiting-signature"
+                    ? "Waiting for Signature…"
+                    : transactionState === "submitting"
+                    ? "Submitting Transaction…"
+                    : "Release Funds"}
+                </button>
+              )}
+
+              {escrow.status === "RELEASED" && (
+                <div
+                  style={{
+                    flex: 1,
+                    padding: "16px",
+                    borderRadius: "12px",
+                    background: "rgba(52,211,153,0.12)",
+                    border: "1px solid rgba(52,211,153,0.4)",
+                    color: "#34d399",
+                    textAlign: "center",
+                    fontWeight: 700,
+                    fontSize: "1.1rem",
+                  }}
+                >
+                  ✅ Funds Released
+                </div>
+              )}
+
+              {escrow.status === "REFUNDED" && (
+                <div
+                  style={{
+                    flex: 1,
+                    padding: "16px",
+                    borderRadius: "12px",
+                    background: "rgba(249,115,22,0.12)",
+                    border: "1px solid rgba(249,115,22,0.4)",
+                    color: "#fb923c",
+                    textAlign: "center",
+                    fontWeight: 700,
+                    fontSize: "1.1rem",
+                  }}
+                >
+                  🔄 Funds Refunded to Buyer
+                </div>
+              )}
+
+              {/* Raise Dispute */}
+              {ACTIVE_STATUSES.includes(escrow.status) && (
+                <button
+                  id="btn-raise-dispute"
+                  onClick={() => {
+                    if (!connected) { initiateConnect(); return; }
+                    setShowDisputeModal(true);
+                  }}
+                  style={{
+                    padding: "16px 24px",
+                    borderRadius: "12px",
+                    background: "rgba(248,113,113,0.1)",
+                    border: "1px solid rgba(248,113,113,0.5)",
+                    color: "#f87171",
+                    fontWeight: 700,
+                    fontSize: "1rem",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  ⚠️ Raise Dispute
+                </button>
+              )}
+
+              {/* Disputed State */}
+              {escrow.status === "DISPUTED" && (
+                <div style={{ display: "flex", gap: "12px", width: "100%", flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      padding: "16px",
+                      borderRadius: "12px",
+                      background: "rgba(248,113,113,0.1)",
+                      border: "1px solid rgba(248,113,113,0.4)",
+                      color: "#f87171",
+                      textAlign: "center",
+                      fontWeight: 700,
+                      fontSize: "1rem",
+                    }}
+                  >
+                    ⚠️ Dispute In Progress
+                  </div>
+                  <button
+                    id="btn-open-resolve-dispute"
+                    onClick={() => {
+                      if (!connected) { initiateConnect(); return; }
+                      setShowResolveModal(true);
+                    }}
+                    style={{
+                      padding: "16px 28px",
+                      borderRadius: "12px",
+                      background: "linear-gradient(135deg, #0284c7, #0369a1)",
+                      border: "none",
+                      color: "#fff",
+                      fontWeight: 700,
+                      fontSize: "1rem",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      boxShadow: "0 4px 15px rgba(2,132,199,0.3)",
+                    }}
+                  >
+                    ⚖️ Resolve Dispute
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Transaction Status */}
+            <div className="mt-8">
+              <TransactionStatus state={transactionState} hash={transactionHash} />
+            </div>
           </div>
         )}
 
-        {/* ── Action Buttons ─────────────────────────────────────────────── */}
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          {/* Complete Work — seller marks work done */}
-          {canComplete && (
-            <button
-              id="btn-complete-work"
-              onClick={handleCompleteWork}
-              className="flex-1 py-4 rounded-xl font-semibold text-lg transition bg-purple-500 hover:bg-purple-600"
-            >
-              {!connected ? "Connect Wallet to Complete" : "✅ Mark Work Completed"}
-            </button>
-          )}
+        {/* ── TAB 2: INSPECTION & ACCEPTANCE CRITERIA ── */}
+        {activeTab === "criteria" && (
+          <div>
+            <div style={{ marginBottom: "20px" }}>
+              <span style={{ fontSize: "12px", fontWeight: "700", color: "#a855f7", textTransform: "uppercase", letterSpacing: "1px" }}>
+                Acceptance Framework
+              </span>
+              <h3 style={{ fontSize: "20px", fontWeight: "700", color: "#f8fafc", margin: "4px 0 8px 0" }}>
+                Product Inspection & Judging Standards ⚖️
+              </h3>
+              <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0 }}>
+                This escrow is governed by the verifiable criteria below. Capital remains locked until the buyer inspects and approves against these standards.
+              </p>
+            </div>
 
-          {/* Release Funds */}
-          {canRelease && (
-            <button
-              id="btn-release-funds"
-              onClick={handleReleaseFunds}
-              disabled={
-                transactionState === "waiting-signature" ||
-                transactionState === "submitting"
-              }
-              className={`flex-1 py-4 rounded-xl font-semibold text-lg transition ${
-                connected
-                  ? "bg-sky-500 hover:bg-sky-600"
-                  : "bg-slate-600 hover:bg-sky-700"
-              }`}
-            >
-              {!connected
-                ? "Connect Wallet to Release"
-                : transactionState === "waiting-signature"
-                ? "Waiting for Signature…"
-                : transactionState === "submitting"
-                ? "Submitting Transaction…"
-                : "Release Funds"}
-            </button>
-          )}
-
-          {escrow.status === "RELEASED" && (
+            {/* Inspection Window Box */}
             <div
               style={{
-                flex: 1,
-                padding: "16px",
+                background: "rgba(30, 41, 59, 0.7)",
+                border: "1px solid #334155",
                 borderRadius: "12px",
-                background: "rgba(52,211,153,0.12)",
-                border: "1px solid rgba(52,211,153,0.4)",
-                color: "#34d399",
-                textAlign: "center",
-                fontWeight: 700,
-                fontSize: "1.1rem",
+                padding: "16px 20px",
+                marginBottom: "20px",
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
               }}
             >
-              ✅ Funds Released
-            </div>
-          )}
-
-          {escrow.status === "REFUNDED" && (
-            <div
-              style={{
-                flex: 1,
-                padding: "16px",
-                borderRadius: "12px",
-                background: "rgba(249,115,22,0.12)",
-                border: "1px solid rgba(249,115,22,0.4)",
-                color: "#fb923c",
-                textAlign: "center",
-                fontWeight: 700,
-                fontSize: "1.1rem",
-              }}
-            >
-              🔄 Funds Refunded to Buyer
-            </div>
-          )}
-
-          {/* Raise Dispute — only visible when escrow is active */}
-          {ACTIVE_STATUSES.includes(escrow.status) && (
-            <button
-              id="btn-raise-dispute"
-              onClick={() => {
-                if (!connected) { initiateConnect(); return; }
-                setShowDisputeModal(true);
-              }}
-              style={{
-                padding: "16px 24px",
-                borderRadius: "12px",
-                background: "rgba(248,113,113,0.1)",
-                border: "1px solid rgba(248,113,113,0.5)",
-                color: "#f87171",
-                fontWeight: 700,
-                fontSize: "1rem",
-                cursor: "pointer",
-                transition: "all 0.2s",
-                whiteSpace: "nowrap",
-              }}
-            >
-              ⚠️ Raise Dispute
-            </button>
-          )}
-
-          {/* Disputed State + Resolve Button */}
-          {escrow.status === "DISPUTED" && (
-            <div style={{ display: "flex", gap: "12px", width: "100%", flexWrap: "wrap" }}>
-              <div
-                style={{
-                  flex: 1,
-                  padding: "16px",
-                  borderRadius: "12px",
-                  background: "rgba(248,113,113,0.1)",
-                  border: "1px solid rgba(248,113,113,0.4)",
-                  color: "#f87171",
-                  textAlign: "center",
-                  fontWeight: 700,
-                  fontSize: "1rem",
-                }}
-              >
-                ⚠️ Dispute In Progress
+              <div style={{ fontSize: "28px" }}>⏱️</div>
+              <div>
+                <div style={{ fontSize: "12px", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase" }}>
+                  Active Inspection & Verification Window
+                </div>
+                <div style={{ fontSize: "18px", fontWeight: "700", color: "#38bdf8" }}>
+                  {escrow.inspectionWindow || "72 Hours"}
+                </div>
+                <div style={{ fontSize: "12px", color: "#cbd5e1", marginTop: "2px" }}>
+                  The buyer has this window following seller handover to inspect deliverables and confirm non-repudiation.
+                </div>
               </div>
-              <button
-                id="btn-open-resolve-dispute"
-                onClick={() => {
-                  if (!connected) { initiateConnect(); return; }
-                  setShowResolveModal(true);
-                }}
-                style={{
-                  padding: "16px 28px",
-                  borderRadius: "12px",
-                  background: "linear-gradient(135deg, #0284c7, #0369a1)",
-                  border: "none",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: "1rem",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  boxShadow: "0 4px 15px rgba(2,132,199,0.3)",
-                }}
-              >
-                ⚖️ Resolve Dispute
-              </button>
             </div>
-          )}
-        </div>
 
-        {/* Transaction Status */}
-        <div className="mt-8">
-          <TransactionStatus state={transactionState} hash={transactionHash} />
-        </div>
+            {/* Checklist Standards */}
+            <div
+              style={{
+                background: "#0f172a",
+                border: "1px solid #1e293b",
+                borderRadius: "12px",
+                padding: "20px",
+                marginBottom: "20px",
+              }}
+            >
+              <h4 style={{ fontSize: "14px", fontWeight: "700", color: "#cbd5e1", margin: "0 0 12px 0", textTransform: "uppercase" }}>
+                Required Judging Criteria & Specifications
+              </h4>
 
-        {/* ── Activity Timeline ───────────────────────────────────────────── */}
-        <hr className="border-slate-700 my-8" />
-        <ActivityTimeline escrowId={id} />
+              <div style={{ whiteSpace: "pre-line", color: "#e2e8f0", fontSize: "14px", lineHeight: "1.7", fontFamily: "sans-serif" }}>
+                {escrow.inspectionCriteria || "1. Deliverable must strictly match agreed technical and quality specifications.\n2. No critical vulnerabilities, defects, or missing components upon inspection.\n3. Source assets, handover documentation, and verified access delivered.\n4. Verification test pass prior to approval."}
+              </div>
+            </div>
+
+            {/* Proof of Delivery */}
+            <div
+              style={{
+                background: "#0f172a",
+                border: "1px solid #1e293b",
+                borderRadius: "12px",
+                padding: "18px 20px",
+                marginBottom: "20px",
+              }}
+            >
+              <h4 style={{ fontSize: "13px", fontWeight: "700", color: "#cbd5e1", margin: "0 0 6px 0", textTransform: "uppercase" }}>
+                Mandatory Proof of Delivery Requirement
+              </h4>
+              <p style={{ color: "#38bdf8", fontSize: "14px", margin: 0, fontFamily: "monospace" }}>
+                {escrow.proofOfDelivery || "Courier tracking code, verifiable Git commit SHA, or signed handover receipt."}
+              </p>
+            </div>
+
+            {/* Dispute Triggers Notice */}
+            <div
+              style={{
+                background: "rgba(239, 68, 68, 0.08)",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                borderRadius: "12px",
+                padding: "16px 20px",
+                marginBottom: "20px",
+              }}
+            >
+              <div style={{ fontSize: "13px", fontWeight: "700", color: "#f87171", marginBottom: "4px" }}>
+                ⚠️ Legitimate Dispute Grounds
+              </div>
+              <div style={{ fontSize: "13px", color: "#fca5a5", lineHeight: "1.5" }}>
+                A dispute may be raised if deliverables fail inspection, diverge from specifications, or if proof of delivery is fraudulent or missing. In a dispute, locked funds are frozen until mutual resolution or arbitration.
+              </div>
+            </div>
+
+            {/* Action Bar inside Criteria Tab */}
+            <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+              {canRelease && (
+                <button
+                  onClick={handleReleaseFunds}
+                  className="flex-1 py-3 rounded-xl font-semibold text-base transition bg-sky-500 hover:bg-sky-600"
+                >
+                  ✓ Approve Criteria & Release Funds
+                </button>
+              )}
+              {ACTIVE_STATUSES.includes(escrow.status) && (
+                <button
+                  onClick={() => setShowDisputeModal(true)}
+                  style={{
+                    padding: "12px 20px",
+                    borderRadius: "12px",
+                    background: "rgba(248,113,113,0.1)",
+                    border: "1px solid rgba(248,113,113,0.5)",
+                    color: "#f87171",
+                    fontWeight: "700",
+                    fontSize: "0.95rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  Dispute Non-Compliance
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 3: AUDIT TIMELINE ── */}
+        {activeTab === "timeline" && (
+          <div>
+            <ActivityTimeline escrowId={id} />
+          </div>
+        )}
       </div>
 
       {/* ── Dispute Modal ─────────────────────────────────────────────────── */}
