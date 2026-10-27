@@ -43,11 +43,11 @@ export const listWallets = () => {
     }
   }
 
-  // Fallback for local development when no extension is installed
-  if (discovered.length === 0) {
+  // Mock wallet only in development mode (explicit DEV env)
+  if (discovered.length === 0 && import.meta.env.DEV) {
     discovered.push({
       key: "mock_dev_wallet",
-      name: "Mock Dev Wallet",
+      name: "Mock Dev Wallet (DEV ONLY)",
       icon: null,
       connect: async () => ({
         getUnshieldedAddress: async () => ({ unshieldedAddress: "midnight_preprod1_mock" }),

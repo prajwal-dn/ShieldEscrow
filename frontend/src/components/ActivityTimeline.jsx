@@ -1,21 +1,56 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "../services/api";
 import useEscrowNotifications from "../hooks/useEscrowNotifications.js";
+import { 
+  HiOutlineCheckCircle, 
+  HiOutlineLockClosed, 
+  HiOutlineExclamationCircle, 
+  HiOutlineSparkles,
+  HiOutlineClock
+} from "react-icons/hi";
 
-const EVENT_COLORS = {
-  CREATED:   { dot: "#38bdf8", label: "Created",   icon: "🆕" },
-  FUNDED:    { dot: "#22c55e", label: "Funded",    icon: "💰" },
-  COMPLETED: { dot: "#a78bfa", label: "Completed", icon: "✅" },
-  RELEASED:  { dot: "#34d399", label: "Released",  icon: "🚀" },
-  DISPUTED:  { dot: "#f87171", label: "Disputed",  icon: "⚠️" },
+const EVENT_CONFIG = {
+  CREATED: {
+    badge: "glow-badge-cyan",
+    dot: "bg-cyan-500",
+    icon: <HiOutlineSparkles className="w-4 h-4 text-indigo-600 dark:text-cyan-400" />,
+    label: "Escrow Created & Registered",
+  },
+  FUNDED: {
+    badge: "glow-badge-amber",
+    dot: "bg-amber-500",
+    icon: <HiOutlineLockClosed className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
+    label: "Capital Locked On-Chain",
+  },
+  COMPLETED: {
+    badge: "glow-badge-purple",
+    dot: "bg-purple-500",
+    icon: <HiOutlineCheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />,
+    label: "Work Delivered & Completed",
+  },
+  RELEASED: {
+    badge: "glow-badge-emerald",
+    dot: "bg-emerald-500",
+    icon: <HiOutlineCheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
+    label: "Funds Released & Settled",
+  },
+  DISPUTED: {
+    badge: "glow-badge-rose",
+    dot: "bg-rose-500",
+    icon: <HiOutlineExclamationCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />,
+    label: "Dispute Arbitration Raised",
+  },
 };
 
 function formatDate(ts) {
   if (!ts) return "";
   const d = new Date(ts);
   return d.toLocaleString(undefined, {
-    month: "short", day: "numeric", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -23,7 +58,6 @@ export default function ActivityTimeline({ escrowId }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Per-escrow WebSocket subscription — auto-refreshes on new events
   const { lastNotification } = useEscrowNotifications(escrowId);
 
   const fetchEvents = useCallback(() => {
@@ -34,12 +68,10 @@ export default function ActivityTimeline({ escrowId }) {
       .finally(() => setLoading(false));
   }, [escrowId]);
 
-  // Initial load
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
 
-  // Live update — re-fetch whenever the backend pushes a notification
   useEffect(() => {
     if (!lastNotification) return;
     fetchEvents();
@@ -47,74 +79,91 @@ export default function ActivityTimeline({ escrowId }) {
 
   if (loading) {
     return (
-      <div style={styles.wrap}>
-        <h3 style={styles.heading}>Activity Log</h3>
-        <p style={styles.empty}>Loading events…</p>
+      <div className="py-8 text-center">
+        <HiOutlineClock className="w-6 h-6 text-indigo-600 dark:text-cyan-400 animate-spin mx-auto mb-2" />
+        <p className="text-xs font-mono text-slate-500 dark:text-slate-400">Loading immutable audit log...</p>
       </div>
     );
   }
 
   if (events.length === 0) {
     return (
-      <div style={styles.wrap}>
-        <h3 style={styles.heading}>Activity Log</h3>
-        <p style={styles.empty}>No events recorded yet.</p>
+      <div className="p-8 rounded-2xl glass-card-subtle border border-slate-200/80 dark:border-white/[0.06] text-center">
+        <p className="text-sm text-slate-600 dark:text-slate-400">No lifecycle events recorded for this escrow yet.</p>
       </div>
     );
   }
 
   return (
-    <div style={styles.wrap}>
-      <h3 style={styles.heading}>Activity Log</h3>
-      <div style={styles.timeline}>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-mono font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+          Cryptographic Audit Trail
+        </h3>
+        <span className="text-xs font-mono text-indigo-600 dark:text-cyan-400 font-semibold">
+          {events.length} State Record{events.length > 1 ? "s" : ""}
+        </span>
+      </div>
+
+      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-[2px] before:bg-gradient-to-b before:from-indigo-500/40 dark:before:from-cyan-500/50 before:via-indigo-500/20 before:to-transparent">
         {events.map((ev, idx) => {
-          const meta = EVENT_COLORS[ev.eventType] || {
-            dot: "#94a3b8", label: ev.eventType, icon: "📋",
+          const cfg = EVENT_CONFIG[ev.eventType] || {
+            badge: "glass-card-subtle text-slate-600 dark:text-slate-300",
+            dot: "bg-slate-400",
+            icon: <HiOutlineClock className="w-4 h-4 text-slate-400" />,
+            label: ev.eventType,
           };
-          const isLast = idx === events.length - 1;
+
           return (
-            <div key={ev.id} style={styles.row}>
-              {/* Vertical connector */}
-              <div style={styles.connectorCol}>
-                <div style={{ ...styles.dot, background: meta.dot }} />
-                {!isLast && <div style={styles.line} />}
+            <div key={ev.id || idx} className="relative group">
+              {/* Timeline marker */}
+              <div className="absolute -left-6 top-1.5 flex items-center justify-center">
+                <span className={`w-3.5 h-3.5 rounded-full ${cfg.dot} shadow-sm ring-4 ring-white dark:ring-[#080d1a]`} />
               </div>
 
-              {/* Content */}
-              <div style={{ ...styles.card, borderColor: meta.dot + "40" }}>
-                <div style={styles.cardHeader}>
-                  <span style={{ fontSize: "1.1rem" }}>{meta.icon}</span>
-                  <span style={{ ...styles.eventLabel, color: meta.dot }}>
-                    {meta.label}
-                  </span>
-                  <span style={styles.timestamp}>
+              {/* Event Card */}
+              <div className="p-4 rounded-xl glass-card-subtle border border-slate-200/80 dark:border-white/[0.07] hover:border-slate-300 dark:hover:border-white/[0.15] transition-all duration-200">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    {cfg.icon}
+                    <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                      {cfg.label}
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                     {formatDate(ev.timestamp)}
                   </span>
                 </div>
 
                 {ev.note && (
-                  <p style={styles.note}>{ev.note}</p>
-                )}
-
-                {ev.actorAddress && (
-                  <p style={styles.actor}>
-                    By:{" "}
-                    <span style={styles.actorVal}>
-                      {ev.actorAddress.length > 24
-                        ? ev.actorAddress.substring(0, 24) + "…"
-                        : ev.actorAddress}
-                    </span>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 mb-2 leading-relaxed bg-slate-100/70 dark:bg-black/20 p-2.5 rounded-lg border border-slate-200/60 dark:border-white/[0.04]">
+                    {ev.note}
                   </p>
                 )}
 
-                {ev.txHash && (
-                  <p style={styles.txHash}>
-                    TX:{" "}
-                    <span style={styles.txVal}>
-                      {ev.txHash.substring(0, 28)}…
-                    </span>
-                  </p>
-                )}
+                <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/60 dark:border-white/[0.04]">
+                  {ev.actorAddress && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-400 dark:text-slate-500">Actor:</span>
+                      <span className="text-indigo-700 dark:text-cyan-300 bg-indigo-50 dark:bg-cyan-500/10 px-1.5 py-0.5 rounded">
+                        {ev.actorAddress.length > 20
+                          ? `${ev.actorAddress.slice(0, 10)}...${ev.actorAddress.slice(-8)}`
+                          : ev.actorAddress}
+                      </span>
+                    </div>
+                  )}
+
+                  {ev.txHash && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-400 dark:text-slate-500">TX:</span>
+                      <span className="text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/10 px-1.5 py-0.5 rounded">
+                        {ev.txHash.length > 20
+                          ? `${ev.txHash.slice(0, 10)}...${ev.txHash.slice(-8)}`
+                          : ev.txHash}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -123,96 +172,3 @@ export default function ActivityTimeline({ escrowId }) {
     </div>
   );
 }
-
-const styles = {
-  wrap: {
-    marginTop: "36px",
-  },
-  heading: {
-    fontSize: "1.25rem",
-    fontWeight: 700,
-    color: "#94a3b8",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-    marginBottom: "20px",
-  },
-  empty: {
-    color: "#475569",
-    fontStyle: "italic",
-    fontSize: "0.9rem",
-  },
-  timeline: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  row: {
-    display: "flex",
-    gap: "16px",
-  },
-  connectorCol: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    paddingTop: "14px",
-    flexShrink: 0,
-    width: "16px",
-  },
-  dot: {
-    width: 14,
-    height: 14,
-    borderRadius: "50%",
-    flexShrink: 0,
-    boxShadow: "0 0 8px currentColor",
-  },
-  line: {
-    width: 2,
-    flex: 1,
-    background: "rgba(148,163,184,0.2)",
-    minHeight: "24px",
-    marginTop: "4px",
-    marginBottom: "4px",
-  },
-  card: {
-    flex: 1,
-    marginBottom: "16px",
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid",
-    borderRadius: "12px",
-    padding: "14px 16px",
-    transition: "background 0.2s",
-  },
-  cardHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    flexWrap: "wrap",
-    marginBottom: "6px",
-  },
-  eventLabel: {
-    fontWeight: 700,
-    fontSize: "0.95rem",
-    flex: 1,
-  },
-  timestamp: {
-    color: "#475569",
-    fontSize: "0.78rem",
-    whiteSpace: "nowrap",
-  },
-  note: {
-    color: "#cbd5e1",
-    fontSize: "0.88rem",
-    marginBottom: "4px",
-  },
-  actor: {
-    color: "#64748b",
-    fontSize: "0.78rem",
-    marginBottom: "2px",
-  },
-  actorVal: { color: "#94a3b8" },
-  txHash: {
-    color: "#64748b",
-    fontSize: "0.78rem",
-    fontFamily: "monospace",
-  },
-  txVal: { color: "#38bdf8" },
-};

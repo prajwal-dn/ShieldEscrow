@@ -6,15 +6,18 @@ import "./index.css";
 
 import { WalletProvider } from "./context/WalletContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { ThemeProvider } from "./context/ThemeContext.jsx";
 
 ReactDOM.createRoot(
   document.getElementById("root")
 ).render(
   <React.StrictMode>
-    <AuthProvider>
-      <WalletProvider>
-        <App />
-      </WalletProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <WalletProvider>
+          <App />
+        </WalletProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );

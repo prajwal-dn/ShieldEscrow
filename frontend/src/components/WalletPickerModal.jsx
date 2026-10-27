@@ -1,193 +1,107 @@
-import { useState } from "react";
 import { listWallets } from "../wallet/selectWallet";
+import { HiOutlineX, HiOutlineArrowRight, HiOutlineShieldCheck, HiOutlineExternalLink } from "react-icons/hi";
 
-/**
- * WalletPickerModal — shown when multiple wallet extensions are detected.
- * The user clicks one card to choose which wallet to connect with.
- */
 export default function WalletPickerModal({ onSelect, onClose }) {
   const wallets = listWallets();
-  const [hover, setHover] = useState(null);
 
-  if (wallets.length === 0) {
-    return (
-      <div style={styles.overlay}>
-        <div style={styles.modal}>
-          <h2 style={styles.title}>No Wallet Found</h2>
-          <p style={styles.sub}>
-            Install the{" "}
+  return (
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div 
+        className="w-full max-w-md p-6 sm:p-8 rounded-3xl glass-panel border border-cyan-500/20 shadow-2xl shadow-black/80 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Glow ambient circle */}
+        <div className="absolute top-0 right-1/4 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+              <HiOutlineShieldCheck className="w-5 h-5" />
+            </div>
+            <h3 className="text-xl font-display font-bold text-white tracking-tight">
+              Connect Wallet
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] transition"
+            aria-label="Close modal"
+          >
+            <HiOutlineX className="w-5 h-5" />
+          </button>
+        </div>
+
+        <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+          Select an authorized Web3 wallet extension to sign zero-knowledge proofs and manage escrow deposits.
+        </p>
+
+        {wallets.length === 0 ? (
+          <div className="p-6 rounded-2xl glass-card-subtle border border-rose-500/30 text-center">
+            <p className="text-sm font-semibold text-rose-300 mb-2">
+              No Compatible Wallet Detected
+            </p>
+            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+              Please install Midnight Lace or a Cardano CIP-30 compatible wallet extension (e.g., Nightly, Lace) to interact with ShieldEscrow.
+            </p>
             <a
               href="https://midnight.network"
               target="_blank"
               rel="noreferrer"
-              style={{ color: "#38bdf8" }}
+              className="btn-shimmer-primary w-full py-2.5 rounded-xl text-xs font-semibold"
             >
-              Midnight Lace wallet
-            </a>{" "}
-            or Midnight Nightly extension to continue.
-          </p>
-          <button style={styles.closeBtn} onClick={onClose}>
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
+              Get Midnight Lace Wallet <HiOutlineExternalLink className="w-4 h-4 ml-1" />
+            </a>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {wallets.map((w) => (
+              <button
+                key={w.key}
+                id={`wallet-option-${w.key}`}
+                onClick={() => onSelect(w)}
+                className="w-full flex items-center justify-between p-4 rounded-2xl glass-card-subtle hover:bg-white/[0.08] border border-white/[0.08] hover:border-cyan-500/40 transition-all duration-200 group text-left cursor-pointer shadow-sm hover:shadow-cyan-500/10"
+              >
+                <div className="flex items-center gap-3.5">
+                  {w.icon ? (
+                    <img src={w.icon} alt={w.name} className="w-10 h-10 rounded-xl object-cover border border-white/[0.1]" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-indigo-600/30">
+                      {w.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
 
-  return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div style={styles.header}>
-          <span style={styles.title}>Connect Wallet</span>
-          <button style={styles.xBtn} onClick={onClose} aria-label="close">
-            ✕
-          </button>
-        </div>
-        <p style={styles.sub}>
-          {wallets.length} wallet{wallets.length > 1 ? "s" : ""} detected —
-          choose one to connect.
-        </p>
-
-        {/* Wallet cards */}
-        <div style={styles.list}>
-          {wallets.map((w, i) => (
-            <button
-              key={w.key}
-              id={`wallet-option-${w.key}`}
-              style={{
-                ...styles.card,
-                ...(hover === i ? styles.cardHover : {}),
-              }}
-              onMouseEnter={() => setHover(i)}
-              onMouseLeave={() => setHover(null)}
-              onClick={() => onSelect(w)}
-            >
-              {w.icon ? (
-                <img src={w.icon} alt={w.name} style={styles.icon} />
-              ) : (
-                <div style={styles.iconFallback}>
-                  {w.name.charAt(0).toUpperCase()}
+                  <div>
+                    <h4 className="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">
+                      {w.name}
+                    </h4>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      <span className="text-[11px] font-mono text-slate-400">
+                        {w.network === "midnight" ? "Midnight Preprod" : "Cardano Preprod"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              )}
-              <div style={styles.cardText}>
-                <span style={styles.cardName}>{w.name}</span>
-                <span style={styles.cardNet}>
-                  {w.network === "midnight" ? "🌑 Midnight" : "₳ Cardano"}
-                </span>
-              </div>
-              <span style={styles.arrow}>→</span>
-            </button>
-          ))}
+
+                <div className="w-8 h-8 rounded-xl bg-white/[0.04] group-hover:bg-cyan-500/20 group-hover:text-cyan-300 text-slate-400 flex items-center justify-center transition-all duration-200">
+                  <HiOutlineArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-6 pt-4 border-t border-white/[0.06] text-center">
+          <p className="text-[11px] font-mono text-slate-400">
+            🔒 Non-custodial — Private keys never leave your device
+          </p>
         </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.65)",
-    backdropFilter: "blur(6px)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 9999,
-    animation: "fadeIn 0.2s ease",
-  },
-  modal: {
-    background: "linear-gradient(145deg, #1e293b, #0f172a)",
-    border: "1px solid rgba(56,189,248,0.25)",
-    borderRadius: "20px",
-    padding: "32px",
-    width: "min(420px, 92vw)",
-    boxShadow: "0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(56,189,248,0.1)",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "8px",
-  },
-  title: {
-    fontSize: "1.4rem",
-    fontWeight: 700,
-    color: "#f1f5f9",
-  },
-  sub: {
-    color: "#94a3b8",
-    fontSize: "0.9rem",
-    marginBottom: "24px",
-  },
-  xBtn: {
-    background: "transparent",
-    border: "none",
-    color: "#64748b",
-    fontSize: "1.1rem",
-    cursor: "pointer",
-    padding: "4px 8px",
-    borderRadius: "6px",
-    transition: "color 0.2s",
-    lineHeight: 1,
-  },
-  list: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-  },
-  card: {
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "14px",
-    padding: "16px",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-    textAlign: "left",
-    width: "100%",
-  },
-  cardHover: {
-    background: "rgba(56,189,248,0.08)",
-    borderColor: "rgba(56,189,248,0.4)",
-    transform: "translateY(-2px)",
-    boxShadow: "0 8px 24px rgba(56,189,248,0.1)",
-  },
-  icon: { width: 40, height: 40, borderRadius: "10px", objectFit: "cover" },
-  iconFallback: {
-    width: 40,
-    height: 40,
-    borderRadius: "10px",
-    background: "linear-gradient(135deg, #38bdf8, #818cf8)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#fff",
-    fontWeight: 700,
-    fontSize: "1.2rem",
-    flexShrink: 0,
-  },
-  cardText: {
-    display: "flex",
-    flexDirection: "column",
-    flex: 1,
-    gap: "2px",
-  },
-  cardName: { color: "#f1f5f9", fontWeight: 600, fontSize: "1rem" },
-  cardNet: { color: "#64748b", fontSize: "0.8rem" },
-  arrow: { color: "#38bdf8", fontSize: "1.2rem" },
-  closeBtn: {
-    marginTop: "20px",
-    width: "100%",
-    padding: "12px",
-    borderRadius: "10px",
-    background: "#1e293b",
-    border: "1px solid #334155",
-    color: "#94a3b8",
-    cursor: "pointer",
-    fontWeight: 600,
-  },
-};

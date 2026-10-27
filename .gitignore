@@ -19,3 +19,9 @@ trustpay-midnight/.midnight-wallet-state/
 *.log
 build_output.txt
 pkg_output.txt
+.npm-cache/
+temp/
+.npmrc
+.claude/
+GEMINI.md
+WORKFLOW_PLAN.md

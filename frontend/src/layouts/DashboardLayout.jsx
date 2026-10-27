@@ -8,30 +8,21 @@ function DashboardLayout({ children }) {
   const { lastNotification } = useEscrowNotifications();
 
   return (
-    <>
+    <div className="min-h-screen ambient-bg bg-grid-pattern text-slate-900 dark:text-slate-100 flex flex-col selection:bg-indigo-500/20 selection:text-indigo-900 dark:selection:text-indigo-200 transition-colors duration-200">
       <Navbar />
 
-      <div
-        style={{
-          display: "flex",
-        }}
-      >
+      <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
         <Sidebar />
 
-        <div
-          style={{
-            padding: "20px",
-            flex: 1,
-          }}
-        >
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {children}
-        </div>
+        </main>
       </div>
 
-      {/* Phase 3 — live push notification toasts (bottom-right corner) */}
+      {/* Live push notification toasts */}
       <NotificationToast notification={lastNotification} />
-    </>
+    </div>
   );
 }
 
-export default DashboardLayout;
+export default DashboardLayout;

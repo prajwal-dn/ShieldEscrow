@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import ActivityTimeline from "../components/ActivityTimeline";
 import Loader from "../components/Loader";
 import StatusBadge from "../components/StatusBadge";
@@ -7,13 +7,30 @@ import TransactionStatus from "../components/TransactionStatus";
 import { useWallet } from "../context/WalletContext";
 import useEscrowNotifications from "../hooks/useEscrowNotifications";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import { signTransaction, submitTransaction } from "../services/escrowService";
+import { 
+  HiShieldCheck, 
+  HiOutlineLockClosed, 
+  HiOutlineCheckCircle, 
+  HiOutlineScale, 
+  HiOutlineClock, 
+  HiOutlineClipboardCopy,
+  HiOutlineCheck,
+  HiOutlineArrowLeft,
+  HiOutlineExclamationCircle,
+  HiOutlineX,
+  HiOutlineShare,
+  HiOutlineUserAdd
+} from "react-icons/hi";
+import AIVerificationPanel from "../components/AIVerificationPanel";
 
-const ACTIVE_STATUSES = ["CREATED", "FUNDED", "COMPLETED"];
+const ACTIVE_STATUSES = ["CREATED", "FUNDED", "COMPLETED", "AI_APPROVED", "DELIVERY_FLAGGED"];
 
 function EscrowDetails() {
   const { id } = useParams();
   const { connected, address, walletApi, initiateConnect } = useWallet();
+  const { user } = useAuth();
 
   const [escrow, setEscrow] = useState(null);
   const [activeTab, setActiveTab] = useState("overview"); // "overview" | "criteria" | "timeline"
@@ -21,6 +38,7 @@ function EscrowDetails() {
   const [transactionHash, setTransactionHash] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [copiedKey, setCopiedKey] = useState(null);
 
   // Dispute state
   const [showDisputeModal, setShowDisputeModal] = useState(false);
@@ -35,7 +53,6 @@ function EscrowDetails() {
   const [resolveLoading, setResolveLoading] = useState(false);
   const [resolveError, setResolveError] = useState("");
 
-  // Per-escrow WebSocket subscription — live updates when status changes
   const { lastNotification } = useEscrowNotifications(id);
 
   const fetchEscrow = useCallback(async () => {
@@ -47,22 +64,27 @@ function EscrowDetails() {
       }
     } catch (err) {
       console.error(err);
-      setError("Failed to load escrow.");
+      setError("Failed to load escrow details from database.");
     } finally {
       setLoading(false);
     }
   }, [id]);
 
-  // Initial fetch
   useEffect(() => {
     fetchEscrow();
   }, [fetchEscrow]);
 
-  // Re-fetch escrow data whenever a WebSocket notification arrives
   useEffect(() => {
     if (!lastNotification) return;
     fetchEscrow();
   }, [lastNotification, fetchEscrow]);
+
+  const handleCopy = (key, text) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
   // ── Complete Work (seller marks work done) ─────────────────────────────────
   const handleCompleteWork = async () => {
@@ -141,7 +163,7 @@ function EscrowDetails() {
       const response = await api.post(`/api/escrows/${id}/resolve-dispute`, {
         resolverAddress: address || "arbitrator",
         resolution: resolveTarget,
-        note: resolveNote || (resolveTarget === "RELEASED" ? "Funds released to seller following resolution" : "Funds refunded to buyer following resolution"),
+        note: resolveNote || (resolveTarget === "RELEASED" ? "Funds released to seller following arbitration" : "Funds refunded to buyer following arbitration"),
       });
       setEscrow(response.data);
       setShowResolveModal(false);
@@ -156,13 +178,54 @@ function EscrowDetails() {
     }
   };
 
-  // ── Render States ──────────────────────────────────────────────────────────
-  if (loading) return <Loader message="Loading Escrow..." />;
+  if (loading) return <Loader message="Decrypting on-chain escrow contract..." />;
 
-  if (error) {
+  if (error || !escrow) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-red-500 text-xl">
-        {error}
+      <div className="max-w-xl mx-auto py-16 text-center">
+        <div className="p-8 rounded-3xl glass-panel border border-rose-500/30">
+          <HiOutlineExclamationCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Escrow Contract Not Found</h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mb-6">{error || "The requested escrow ID does not exist."}</p>
+          <Link to="/dashboard" className="btn-shimmer-primary px-6 py-2.5 rounded-xl text-xs font-semibold">
+            Return to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const isBuyer = userKeys.includes(buyer);
+  const isSeller = userKeys.includes(seller);
+
+  // If user is not yet authorized, check if this is an open invite for a seller to join
+  const canJoinAsSeller = !isAuthorized && user?.sellerId && (!escrow.sellerJoined || escrow.sellerAddress === "SEL-PENDING" || !escrow.sellerAddress);
+
+  const handleJoinAsSeller = async () => {
+    try {
+      await api.post(`/api/escrows/${id}/approve`, {
+        actorAddress: user.sellerId,
+        sellerAddress: user.sellerId,
+      });
+      await fetchEscrow();
+    } catch (err) {
+      console.error("Failed to join contract:", err);
+    }
+  };
+
+  if (!isAuthorized && !canJoinAsSeller) {
+    return (
+      <div className="max-w-xl mx-auto py-16 text-center">
+        <div className="p-8 rounded-3xl glass-panel border border-amber-500/30">
+          <HiShieldCheck className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Restricted Escrow Contract</h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+            This agreement is cryptographically shielded. Your account ({user?.userId || "guest"}) is not an authorized buyer or seller for this contract.
+          </p>
+          <Link to="/dashboard" className="btn-shimmer-primary px-6 py-2.5 rounded-xl text-xs font-semibold">
+            Return to Your Dashboard
+          </Link>
+        </div>
       </div>
     );
   }
@@ -170,230 +233,395 @@ function EscrowDetails() {
   const canRelease = escrow.status !== "RELEASED" && escrow.status !== "REFUNDED" && escrow.status !== "DISPUTED";
   const canComplete = escrow.status === "CREATED" || escrow.status === "FUNDED";
 
+  // Compute active lifecycle step (1 to 3)
+  const getStepIndex = () => {
+    if (escrow.status === "RELEASED" || escrow.status === "REFUNDED") return 3;
+    if (escrow.status === "COMPLETED") return 2;
+    if (escrow.status === "DISPUTED") return -1;
+    return 1;
+  };
+
+  const stepIndex = getStepIndex();
+
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-6 md:p-10">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-sky-400">Escrow Details</h1>
-        <p className="text-slate-400 mt-2">View and manage this escrow contract and inspection standards securely.</p>
+    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-300">
+      
+      {/* Top Breadcrumb & Actions Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/[0.06]">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/dashboard"
+            className="p-2.5 rounded-xl glass-card-subtle text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/[0.08] transition"
+            title="Back to Dashboard"
+          >
+            <HiOutlineArrowLeft className="w-4 h-4" />
+          </Link>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-indigo-600 dark:text-cyan-400">
+                ESCROW #{escrow.id}
+              </span>
+              <span className="text-slate-400 dark:text-slate-500">•</span>
+              <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                Midnight Preprod ZK Contract
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-display font-black text-slate-900 dark:text-white tracking-tight">
+              {escrow.description || `Escrow #${escrow.id}`}
+            </h1>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <StatusBadge status={escrow.status} />
+        </div>
       </div>
 
-      {/* Main Tabs Navigation */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid #334155", paddingBottom: "10px", flexWrap: "wrap" }}>
+      {/* Lifecycle Stepper Bar */}
+      <div className="p-6 rounded-3xl glass-panel relative overflow-hidden">
+        <div className="flex items-center justify-between max-w-3xl mx-auto relative">
+          
+          {/* Background progress line */}
+          <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-[2px] bg-slate-200 dark:bg-white/[0.08] z-0" />
+          
+          {/* Step 1: Locked */}
+          <div className="relative z-10 flex flex-col items-center">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-mono text-xs font-bold transition-all duration-300 ${
+              stepIndex >= 1 
+                ? "bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/20 ring-4 ring-white dark:ring-[#070b14]" 
+                : "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400 ring-4 ring-white dark:ring-[#070b14]"
+            }`}>
+              <HiOutlineLockClosed className="w-5 h-5" />
+            </div>
+            <span className="text-[11px] font-mono font-semibold text-slate-700 dark:text-slate-300 mt-2">
+              1. Funds Locked
+            </span>
+          </div>
+
+          {/* Step 2: Work Completed */}
+          <div className="relative z-10 flex flex-col items-center">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-mono text-xs font-bold transition-all duration-300 ${
+              stepIndex >= 2 
+                ? "bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/25 ring-4 ring-white dark:ring-[#070b14]" 
+                : "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400 ring-4 ring-white dark:ring-[#070b14]"
+            }`}>
+              <HiOutlineCheckCircle className="w-5 h-5" />
+            </div>
+            <span className="text-[11px] font-mono font-semibold text-slate-700 dark:text-slate-300 mt-2">
+              2. Work Delivered
+            </span>
+          </div>
+
+          {/* Step 3: Settled / Released */}
+          <div className="relative z-10 flex flex-col items-center">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-mono text-xs font-bold transition-all duration-300 ${
+              stepIndex >= 3 
+                ? "bg-gradient-to-tr from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/25 ring-4 ring-white dark:ring-[#070b14]" 
+                : "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400 ring-4 ring-white dark:ring-[#070b14]"
+            }`}>
+              <HiShieldCheck className="w-5 h-5" />
+            </div>
+            <span className="text-[11px] font-mono font-semibold text-slate-700 dark:text-slate-300 mt-2">
+              3. Final Settlement
+            </span>
+          </div>
+
+        </div>
+
+        {escrow.status === "DISPUTED" && (
+          <div className="mt-4 pt-3 border-t border-rose-500/20 text-center">
+            <span className="text-xs font-mono font-semibold text-rose-500 dark:text-rose-400 flex items-center justify-center gap-1.5">
+              <HiOutlineExclamationCircle className="w-4 h-4" />
+              Contract is currently under arbitration. Mutual release or dispute decision required.
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Tabs Navigation */}
+      <div className="flex items-center gap-2 p-1 rounded-2xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/[0.06]">
         <button
           type="button"
           onClick={() => setActiveTab("overview")}
-          style={{
-            background: activeTab === "overview" ? "rgba(56, 189, 248, 0.15)" : "transparent",
-            color: activeTab === "overview" ? "#38bdf8" : "#94a3b8",
-            border: activeTab === "overview" ? "1px solid #38bdf8" : "1px solid transparent",
-            borderRadius: "8px",
-            padding: "10px 18px",
-            fontWeight: "700",
-            fontSize: "14px",
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer ${
+            activeTab === "overview"
+              ? "bg-white dark:bg-indigo-500/30 text-indigo-700 dark:text-cyan-300 border border-slate-200 dark:border-cyan-500/30 shadow-sm"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          }`}
         >
-          📋 Overview & Settlement
+          <HiShieldCheck className="w-4 h-4" />
+          <span>Overview & Settlement</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("criteria")}
-          style={{
-            background: activeTab === "criteria" ? "rgba(168, 85, 247, 0.15)" : "transparent",
-            color: activeTab === "criteria" ? "#c084fc" : "#94a3b8",
-            border: activeTab === "criteria" ? "1px solid #a855f7" : "1px solid transparent",
-            borderRadius: "8px",
-            padding: "10px 18px",
-            fontWeight: "700",
-            fontSize: "14px",
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer ${
+            activeTab === "criteria"
+              ? "bg-white dark:bg-indigo-500/30 text-purple-700 dark:text-purple-300 border border-slate-200 dark:border-purple-500/30 shadow-sm"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          }`}
         >
-          ⚖️ Inspection & Judging Criteria
+          <HiOutlineScale className="w-4 h-4" />
+          <span>Inspection & Criteria</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("timeline")}
-          style={{
-            background: activeTab === "timeline" ? "rgba(52, 211, 153, 0.15)" : "transparent",
-            color: activeTab === "timeline" ? "#34d399" : "#94a3b8",
-            border: activeTab === "timeline" ? "1px solid #34d399" : "1px solid transparent",
-            borderRadius: "8px",
-            padding: "10px 18px",
-            fontWeight: "700",
-            fontSize: "14px",
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer ${
+            activeTab === "timeline"
+              ? "bg-white dark:bg-indigo-500/30 text-emerald-700 dark:text-emerald-300 border border-slate-200 dark:border-emerald-500/30 shadow-sm"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          }`}
         >
-          🕒 Audit Timeline
+          <HiOutlineClock className="w-4 h-4" />
+          <span>Audit Timeline</span>
         </button>
       </div>
 
-      {/* Main Card */}
-      <div className="max-w-3xl bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-700">
-        <h2 className="text-3xl font-bold mb-6">{escrow.description}</h2>
-
+      {/* Main Content Box */}
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl">
+        
         {/* ── TAB 1: OVERVIEW & ACTIONS ── */}
         {activeTab === "overview" && (
-          <div>
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
+          <div className="space-y-8">
+            
+            {/* Top Financial Stats Banner */}
+            <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-50/80 via-white to-slate-50 dark:from-cyan-500/10 dark:via-indigo-500/10 dark:to-transparent border border-indigo-200/80 dark:border-cyan-500/20 flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-slate-400 text-sm mb-1 font-semibold">Buyer Identifier</p>
-                <p className="break-all font-mono text-sky-300 font-medium">{escrow.buyerAddress}</p>
+                <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
+                  Locked Escrow Capital
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-display font-black text-slate-900 dark:text-white">
+                    {escrow.amount}
+                  </span>
+                  <span className="text-sm font-mono font-semibold text-indigo-600 dark:text-cyan-400">
+                    tNight / ADA
+                  </span>
+                </div>
               </div>
-              <div>
-                <p className="text-slate-400 text-sm mb-1 font-semibold">Seller Identifier</p>
-                <p className="break-all font-mono text-purple-300 font-medium">{escrow.sellerAddress}</p>
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm mb-1 font-semibold">Locked Escrow Capital</p>
-                <p className="text-2xl font-bold text-green-400">{escrow.amount} ADA / tNight</p>
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm mb-1 font-semibold">Protocol State</p>
-                <StatusBadge status={escrow.status} />
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm mb-1 font-semibold">Inspection Window</p>
-                <p className="text-slate-200 font-medium">{escrow.inspectionWindow || "72 Hours"}</p>
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm mb-1 font-semibold">Created Timestamp</p>
-                <p className="text-slate-300 text-sm">{escrow.createdAt}</p>
+
+              <div className="text-left sm:text-right">
+                <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
+                  Inspection Timelock
+                </span>
+                <span className="text-lg font-mono font-bold text-slate-800 dark:text-slate-200 flex items-center sm:justify-end gap-1.5">
+                  <HiOutlineClock className="w-4 h-4 text-indigo-600 dark:text-cyan-400" />
+                  {escrow.inspectionWindow || "72 Hours"}
+                </span>
               </div>
             </div>
 
-            <hr className="border-slate-700 my-8" />
+            {/* Counterparties Cards */}
+            <div className="grid sm:grid-cols-2 gap-4">
+              
+              {/* Buyer */}
+              <div className="p-4 rounded-2xl glass-card-subtle border border-slate-200/80 dark:border-white/[0.08] relative group">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-mono text-indigo-600 dark:text-cyan-400 uppercase tracking-wider font-semibold">
+                    Buyer Identifier (Depositor)
+                  </span>
+                  <button
+                    onClick={() => handleCopy("buyer", escrow.buyerAddress)}
+                    className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-300 transition cursor-pointer"
+                    title="Copy Buyer ID"
+                  >
+                    {copiedKey === "buyer" ? (
+                      <HiOutlineCheck className="w-4 h-4 text-emerald-500" />
+                    ) : (
+                      <HiOutlineClipboardCopy className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="font-mono text-sm font-bold text-slate-900 dark:text-white break-all select-all">
+                  {escrow.buyerAddress}
+                </p>
+                <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  <HiOutlineCheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Authorized Depositor Signer</span>
+                </div>
+              </div>
 
-            {/* Wallet warning */}
+              {/* Seller */}
+              <div className="p-4 rounded-2xl glass-card-subtle border border-slate-200/80 dark:border-white/[0.08] relative group">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-mono text-purple-600 dark:text-purple-400 uppercase tracking-wider font-semibold">
+                    Seller Identifier (Beneficiary)
+                  </span>
+                  <button
+                    onClick={() => handleCopy("seller", escrow.sellerAddress)}
+                    className="p-1 rounded text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 transition cursor-pointer"
+                    title="Copy Seller ID"
+                  >
+                    {copiedKey === "seller" ? (
+                      <HiOutlineCheck className="w-4 h-4 text-emerald-500" />
+                    ) : (
+                      <HiOutlineClipboardCopy className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="font-mono text-sm font-bold text-slate-900 dark:text-white break-all select-all">
+                  {escrow.sellerAddress}
+                </p>
+                <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  <HiOutlineCheckCircle className="w-3.5 h-3.5 text-purple-500" />
+                  <span>Settlement Recipient</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Wallet Connection Requirement Notice */}
             {!connected && (
-              <div className="mb-5 rounded-xl border border-yellow-500 bg-yellow-500/10 p-4 text-yellow-300">
-                🔒 Connect your Midnight wallet to interact with this escrow.
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <HiOutlineLockClosed className="w-4 h-4 text-amber-500" />
+                  <span>Connect your Midnight wallet extension to sign and execute actions on this escrow.</span>
+                </div>
+                <button
+                  onClick={initiateConnect}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 font-semibold text-slate-900 dark:text-white transition whitespace-nowrap cursor-pointer"
+                >
+                  Connect
+                </button>
               </div>
             )}
 
-            {/* ── Action Buttons ── */}
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-              {/* Complete Work */}
-              {canComplete && (
-                <button
-                  id="btn-complete-work"
-                  onClick={handleCompleteWork}
-                  className="flex-1 py-4 rounded-xl font-semibold text-lg transition bg-purple-500 hover:bg-purple-600"
-                >
-                  {!connected ? "Connect Wallet to Complete" : "✅ Mark Work Completed"}
-                </button>
-              )}
+            {/* Shared Treaty Session Invitation Link */}
+            <div className="p-4 rounded-2xl glass-card-subtle border border-indigo-200/80 dark:border-cyan-500/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-cyan-500/10 text-indigo-600 dark:text-cyan-400 border border-indigo-200 dark:border-cyan-500/20">
+                  <HiOutlineShare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">
+                    Common Treaty Session
+                  </h5>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Share this link with your counterparty so both parties can coordinate in this shared session.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleCopy("sessionLink", window.location.href)}
+                className="btn-glass-secondary px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer self-start sm:self-center"
+              >
+                {copiedKey === "sessionLink" ? (
+                  <HiOutlineCheck className="w-4 h-4 text-emerald-500" />
+                ) : (
+                  <HiOutlineClipboardCopy className="w-4 h-4" />
+                )}
+                <span>{copiedKey === "sessionLink" ? "Link Copied!" : "Copy Session Link"}</span>
+              </button>
+            </div>
 
-              {/* Release Funds */}
-              {canRelease && (
+            {/* Seller Join Banner if opening an open invite */}
+            {canJoinAsSeller && (
+              <div className="p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-500/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <HiOutlineUserAdd className="w-6 h-6 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Join as Contract Seller</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">Accept this treaty invite with your Seller ID ({user.sellerId}) to bind yourself to this escrow agreement.</p>
+                  </div>
+                </div>
                 <button
-                  id="btn-release-funds"
-                  onClick={handleReleaseFunds}
-                  disabled={
-                    transactionState === "waiting-signature" ||
-                    transactionState === "submitting"
-                  }
-                  className={`flex-1 py-4 rounded-xl font-semibold text-lg transition ${
-                    connected
-                      ? "bg-sky-500 hover:bg-sky-600"
-                      : "bg-slate-600 hover:bg-sky-700"
-                  }`}
+                  onClick={handleJoinAsSeller}
+                  className="btn-shimmer-primary px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap"
                 >
-                  {!connected
-                    ? "Connect Wallet to Release"
-                    : transactionState === "waiting-signature"
-                    ? "Waiting for Signature…"
-                    : transactionState === "submitting"
-                    ? "Submitting Transaction…"
-                    : "Release Funds"}
+                  Accept & Join Treaty
                 </button>
-              )}
+              </div>
+            )}
 
+            {/* AI Deliverable & Rule Inspection Engine */}
+            <AIVerificationPanel
+              escrow={escrow}
+              isSeller={isSeller}
+              isBuyer={isBuyer}
+              onVerificationComplete={() => {
+                fetchEscrow();
+              }}
+            />
+
+            {/* Action Buttons Section */}
+            <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.06] space-y-4">
+              <div className="flex flex-wrap gap-4">
+                
+                {/* Complete Work */}
+                {canComplete && (
+                  <button
+                    id="btn-complete-work"
+                    onClick={handleCompleteWork}
+                    className="btn-shimmer-primary flex-1 py-4 rounded-2xl text-sm font-bold tracking-wide"
+                  >
+                    {!connected ? "Connect Wallet to Complete" : "Mark Work Completed"}
+                  </button>
+                )}
+
+                {/* Release Funds */}
+                {canRelease && (
+                  <button
+                    id="btn-release-funds"
+                    onClick={handleReleaseFunds}
+                    disabled={
+                      transactionState === "waiting-signature" ||
+                      transactionState === "submitting"
+                    }
+                    className="btn-shimmer-emerald flex-1 py-4 rounded-2xl text-sm font-bold tracking-wide"
+                  >
+                    {!connected
+                      ? "Connect Wallet to Release"
+                      : transactionState === "waiting-signature"
+                      ? "Waiting for Signature…"
+                      : transactionState === "submitting"
+                      ? "Submitting Proof…"
+                      : "Release Funds to Seller"}
+                  </button>
+                )}
+
+                {/* Raise Dispute */}
+                {ACTIVE_STATUSES.includes(escrow.status) && (
+                  <button
+                    id="btn-raise-dispute"
+                    onClick={() => {
+                      if (!connected) { initiateConnect(); return; }
+                      setShowDisputeModal(true);
+                    }}
+                    className="btn-glass-danger px-6 py-4 rounded-2xl text-sm font-bold tracking-wide"
+                  >
+                    <HiOutlineExclamationCircle className="w-5 h-5" />
+                    <span>Raise Dispute</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Status Specific Banners */}
               {escrow.status === "RELEASED" && (
-                <div
-                  style={{
-                    flex: 1,
-                    padding: "16px",
-                    borderRadius: "12px",
-                    background: "rgba(52,211,153,0.12)",
-                    border: "1px solid rgba(52,211,153,0.4)",
-                    color: "#34d399",
-                    textAlign: "center",
-                    fontWeight: 700,
-                    fontSize: "1.1rem",
-                  }}
-                >
-                  ✅ Funds Released
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-center font-bold text-base flex items-center justify-center gap-2">
+                  <HiOutlineCheckCircle className="w-6 h-6" />
+                  <span>Funds Successfully Released & Settled to Seller</span>
                 </div>
               )}
 
               {escrow.status === "REFUNDED" && (
-                <div
-                  style={{
-                    flex: 1,
-                    padding: "16px",
-                    borderRadius: "12px",
-                    background: "rgba(249,115,22,0.12)",
-                    border: "1px solid rgba(249,115,22,0.4)",
-                    color: "#fb923c",
-                    textAlign: "center",
-                    fontWeight: 700,
-                    fontSize: "1.1rem",
-                  }}
-                >
-                  🔄 Funds Refunded to Buyer
+                <div className="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/30 text-orange-700 dark:text-orange-400 text-center font-bold text-base flex items-center justify-center gap-2">
+                  <HiOutlineCheckCircle className="w-6 h-6" />
+                  <span>Funds Refunded to Buyer Following Resolution</span>
                 </div>
               )}
 
-              {/* Raise Dispute */}
-              {ACTIVE_STATUSES.includes(escrow.status) && (
-                <button
-                  id="btn-raise-dispute"
-                  onClick={() => {
-                    if (!connected) { initiateConnect(); return; }
-                    setShowDisputeModal(true);
-                  }}
-                  style={{
-                    padding: "16px 24px",
-                    borderRadius: "12px",
-                    background: "rgba(248,113,113,0.1)",
-                    border: "1px solid rgba(248,113,113,0.5)",
-                    color: "#f87171",
-                    fontWeight: 700,
-                    fontSize: "1rem",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  ⚠️ Raise Dispute
-                </button>
-              )}
-
-              {/* Disputed State */}
               {escrow.status === "DISPUTED" && (
-                <div style={{ display: "flex", gap: "12px", width: "100%", flexWrap: "wrap" }}>
-                  <div
-                    style={{
-                      flex: 1,
-                      padding: "16px",
-                      borderRadius: "12px",
-                      background: "rgba(248,113,113,0.1)",
-                      border: "1px solid rgba(248,113,113,0.4)",
-                      color: "#f87171",
-                      textAlign: "center",
-                      fontWeight: 700,
-                      fontSize: "1rem",
-                    }}
-                  >
-                    ⚠️ Dispute In Progress
+                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <HiOutlineExclamationCircle className="w-6 h-6 text-rose-500 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-rose-700 dark:text-rose-300">Dispute In Progress</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">Funds are cryptographically frozen pending arbitrator resolution.</p>
+                    </div>
                   </div>
                   <button
                     id="btn-open-resolve-dispute"
@@ -401,152 +629,84 @@ function EscrowDetails() {
                       if (!connected) { initiateConnect(); return; }
                       setShowResolveModal(true);
                     }}
-                    style={{
-                      padding: "16px 28px",
-                      borderRadius: "12px",
-                      background: "linear-gradient(135deg, #0284c7, #0369a1)",
-                      border: "none",
-                      color: "#fff",
-                      fontWeight: 700,
-                      fontSize: "1rem",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      boxShadow: "0 4px 15px rgba(2,132,199,0.3)",
-                    }}
+                    className="btn-shimmer-primary px-5 py-2.5 rounded-xl text-xs font-bold"
                   >
-                    ⚖️ Resolve Dispute
+                    Resolve Dispute
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Transaction Status */}
-            <div className="mt-8">
-              <TransactionStatus state={transactionState} hash={transactionHash} />
-            </div>
+            {/* Transaction Status Box */}
+            <TransactionStatus state={transactionState} hash={transactionHash} />
+
           </div>
         )}
 
         {/* ── TAB 2: INSPECTION & ACCEPTANCE CRITERIA ── */}
         {activeTab === "criteria" && (
-          <div>
-            <div style={{ marginBottom: "20px" }}>
-              <span style={{ fontSize: "12px", fontWeight: "700", color: "#a855f7", textTransform: "uppercase", letterSpacing: "1px" }}>
-                Acceptance Framework
+          <div className="space-y-6">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 block mb-1">
+                ACCEPTANCE FRAMEWORK
               </span>
-              <h3 style={{ fontSize: "20px", fontWeight: "700", color: "#f8fafc", margin: "4px 0 8px 0" }}>
-                Product Inspection & Judging Standards ⚖️
+              <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">
+                Inspection & Quality Standards
               </h3>
-              <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0 }}>
-                This escrow is governed by the verifiable criteria below. Capital remains locked until the buyer inspects and approves against these standards.
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                This escrow is governed by verifiable benchmarks. Funds remain locked until the buyer confirms the criteria have been fulfilled.
               </p>
             </div>
 
-            {/* Inspection Window Box */}
-            <div
-              style={{
-                background: "rgba(30, 41, 59, 0.7)",
-                border: "1px solid #334155",
-                borderRadius: "12px",
-                padding: "16px 20px",
-                marginBottom: "20px",
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-              }}
-            >
-              <div style={{ fontSize: "28px" }}>⏱️</div>
+            <div className="p-4 rounded-2xl glass-card-subtle border border-indigo-200 dark:border-cyan-500/20 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-indigo-50 dark:bg-cyan-500/10 text-indigo-600 dark:text-cyan-400 shrink-0">
+                <HiOutlineClock className="w-6 h-6" />
+              </div>
               <div>
-                <div style={{ fontSize: "12px", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase" }}>
-                  Active Inspection & Verification Window
-                </div>
-                <div style={{ fontSize: "18px", fontWeight: "700", color: "#38bdf8" }}>
+                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 block uppercase">
+                  Active Inspection Window
+                </span>
+                <span className="text-base font-bold text-indigo-600 dark:text-cyan-300">
                   {escrow.inspectionWindow || "72 Hours"}
-                </div>
-                <div style={{ fontSize: "12px", color: "#cbd5e1", marginTop: "2px" }}>
-                  The buyer has this window following seller handover to inspect deliverables and confirm non-repudiation.
-                </div>
+                </span>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                  The buyer has this window following deliverable handover to inspect deliverables before automated settlement.
+                </p>
               </div>
             </div>
 
-            {/* Checklist Standards */}
-            <div
-              style={{
-                background: "#0f172a",
-                border: "1px solid #1e293b",
-                borderRadius: "12px",
-                padding: "20px",
-                marginBottom: "20px",
-              }}
-            >
-              <h4 style={{ fontSize: "14px", fontWeight: "700", color: "#cbd5e1", margin: "0 0 12px 0", textTransform: "uppercase" }}>
-                Required Judging Criteria & Specifications
+            <div className="p-5 rounded-2xl glass-card-subtle border border-slate-200/80 dark:border-white/[0.08]">
+              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-3">
+                Agreed Quality Standards & Checklist
               </h4>
-
-              <div style={{ whiteSpace: "pre-line", color: "#e2e8f0", fontSize: "14px", lineHeight: "1.7", fontFamily: "sans-serif" }}>
-                {escrow.inspectionCriteria || "1. Deliverable must strictly match agreed technical and quality specifications.\n2. No critical vulnerabilities, defects, or missing components upon inspection.\n3. Source assets, handover documentation, and verified access delivered.\n4. Verification test pass prior to approval."}
+              <div className="whitespace-pre-line text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans bg-slate-100/80 dark:bg-black/30 p-4 rounded-xl border border-slate-200/60 dark:border-white/[0.04]">
+                {escrow.inspectionCriteria || "1. Deliverable must strictly match agreed technical and quality specifications.\n2. No critical vulnerabilities, defects, or missing components.\n3. Handover assets and documentation delivered."}
               </div>
             </div>
 
-            {/* Proof of Delivery */}
-            <div
-              style={{
-                background: "#0f172a",
-                border: "1px solid #1e293b",
-                borderRadius: "12px",
-                padding: "18px 20px",
-                marginBottom: "20px",
-              }}
-            >
-              <h4 style={{ fontSize: "13px", fontWeight: "700", color: "#cbd5e1", margin: "0 0 6px 0", textTransform: "uppercase" }}>
+            <div className="p-5 rounded-2xl glass-card-subtle border border-slate-200/80 dark:border-white/[0.08]">
+              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
                 Mandatory Proof of Delivery Requirement
               </h4>
-              <p style={{ color: "#38bdf8", fontSize: "14px", margin: 0, fontFamily: "monospace" }}>
-                {escrow.proofOfDelivery || "Courier tracking code, verifiable Git commit SHA, or signed handover receipt."}
+              <p className="font-mono text-xs text-indigo-700 dark:text-cyan-300 bg-slate-100/80 dark:bg-black/30 p-3 rounded-xl border border-slate-200/60 dark:border-white/[0.04]">
+                {escrow.proofOfDelivery || "Carrier tracking code, verifiable Git commit SHA, or signed handover receipt."}
               </p>
             </div>
 
-            {/* Dispute Triggers Notice */}
-            <div
-              style={{
-                background: "rgba(239, 68, 68, 0.08)",
-                border: "1px solid rgba(239, 68, 68, 0.3)",
-                borderRadius: "12px",
-                padding: "16px 20px",
-                marginBottom: "20px",
-              }}
-            >
-              <div style={{ fontSize: "13px", fontWeight: "700", color: "#f87171", marginBottom: "4px" }}>
-                ⚠️ Legitimate Dispute Grounds
-              </div>
-              <div style={{ fontSize: "13px", color: "#fca5a5", lineHeight: "1.5" }}>
-                A dispute may be raised if deliverables fail inspection, diverge from specifications, or if proof of delivery is fraudulent or missing. In a dispute, locked funds are frozen until mutual resolution or arbitration.
-              </div>
-            </div>
-
-            {/* Action Bar inside Criteria Tab */}
-            <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+            {/* Criteria Tab Actions */}
+            <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.06] flex gap-3">
               {canRelease && (
                 <button
                   onClick={handleReleaseFunds}
-                  className="flex-1 py-3 rounded-xl font-semibold text-base transition bg-sky-500 hover:bg-sky-600"
+                  className="btn-shimmer-emerald flex-1 py-3 rounded-xl text-xs font-bold"
                 >
-                  ✓ Approve Criteria & Release Funds
+                  Approve Criteria & Release Funds
                 </button>
               )}
               {ACTIVE_STATUSES.includes(escrow.status) && (
                 <button
                   onClick={() => setShowDisputeModal(true)}
-                  style={{
-                    padding: "12px 20px",
-                    borderRadius: "12px",
-                    background: "rgba(248,113,113,0.1)",
-                    border: "1px solid rgba(248,113,113,0.5)",
-                    color: "#f87171",
-                    fontWeight: "700",
-                    fontSize: "0.95rem",
-                    cursor: "pointer",
-                  }}
+                  className="btn-glass-danger px-5 py-3 rounded-xl text-xs font-bold"
                 >
                   Dispute Non-Compliance
                 </button>
@@ -561,100 +721,65 @@ function EscrowDetails() {
             <ActivityTimeline escrowId={id} />
           </div>
         )}
+
       </div>
 
       {/* ── Dispute Modal ─────────────────────────────────────────────────── */}
       {showDisputeModal && (
         <div
-          style={{
-            position: "fixed", inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            backdropFilter: "blur(6px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 9999,
-          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
           onClick={() => setShowDisputeModal(false)}
         >
           <div
-            style={{
-              background: "linear-gradient(145deg, #1e293b, #0f172a)",
-              border: "1px solid rgba(248,113,113,0.3)",
-              borderRadius: "20px",
-              padding: "32px",
-              width: "min(460px, 92vw)",
-              boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
-            }}
+            className="w-full max-w-md p-6 sm:p-8 rounded-3xl glass-panel border border-rose-500/30 shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ color: "#f87171", fontWeight: 700, fontSize: "1.5rem", marginBottom: "8px" }}>
-              ⚠️ Raise a Dispute
-            </h2>
-            <p style={{ color: "#94a3b8", fontSize: "0.9rem", marginBottom: "20px" }}>
-              Describe the issue. A dispute will freeze this escrow until it is resolved.
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                  <HiOutlineExclamationCircle className="w-5 h-5" />
+                </div>
+                <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">
+                  Raise a Dispute
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowDisputeModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+              >
+                <HiOutlineX className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+              Describe the issue or non-compliance. Raising a dispute will cryptographically freeze this escrow until resolved.
             </p>
 
             <textarea
               id="dispute-reason-input"
               value={disputeReason}
               onChange={(e) => setDisputeReason(e.target.value)}
-              placeholder="e.g. The seller did not deliver the agreed-upon work…"
+              placeholder="e.g. Deliverable failed acceptance testing or diverged from specifications..."
               rows={4}
-              style={{
-                width: "100%", boxSizing: "border-box",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(248,113,113,0.3)",
-                borderRadius: "10px",
-                padding: "12px 14px",
-                color: "#f1f5f9",
-                fontSize: "0.9rem",
-                resize: "vertical",
-                outline: "none",
-                marginBottom: "16px",
-              }}
+              className="glass-input w-full p-3 rounded-xl text-xs font-sans mb-3 border-rose-500/30 focus:border-rose-500"
             />
 
             {disputeError && (
-              <p style={{ color: "#f87171", fontSize: "0.85rem", marginBottom: "12px" }}>
-                {disputeError}
-              </p>
+              <p className="text-rose-500 text-xs mb-3">{disputeError}</p>
             )}
 
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div className="flex gap-3">
               <button
                 id="btn-confirm-dispute"
                 onClick={handleRaiseDispute}
                 disabled={disputeLoading}
-                style={{
-                  flex: 1,
-                  padding: "14px",
-                  borderRadius: "10px",
-                  background: disputeLoading
-                    ? "rgba(248,113,113,0.3)"
-                    : "linear-gradient(135deg, #ef4444, #b91c1c)",
-                  border: "none",
-                  color: "#fff",
-                  fontWeight: 700,
-                  cursor: disputeLoading ? "not-allowed" : "pointer",
-                  fontSize: "1rem",
-                  transition: "opacity 0.2s",
-                }}
+                className="btn-glass-danger flex-1 py-3 rounded-xl text-xs font-bold"
               >
-                {disputeLoading ? "Submitting…" : "Confirm Dispute"}
+                {disputeLoading ? "Submitting..." : "Confirm Dispute"}
               </button>
               <button
-                id="btn-cancel-dispute"
-                onClick={() => { setShowDisputeModal(false); setDisputeError(""); }}
-                style={{
-                  flex: 1,
-                  padding: "14px",
-                  borderRadius: "10px",
-                  background: "transparent",
-                  border: "1px solid #334155",
-                  color: "#94a3b8",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  fontSize: "1rem",
-                }}
+                onClick={() => setShowDisputeModal(false)}
+                className="btn-glass-secondary px-5 py-3 rounded-xl text-xs font-semibold"
               >
                 Cancel
               </button>
@@ -666,71 +791,61 @@ function EscrowDetails() {
       {/* ── Resolve Dispute Modal ─────────────────────────────────────────── */}
       {showResolveModal && (
         <div
-          style={{
-            position: "fixed", inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            backdropFilter: "blur(6px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 9999,
-          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
           onClick={() => setShowResolveModal(false)}
         >
           <div
-            style={{
-              background: "linear-gradient(145deg, #1e293b, #0f172a)",
-              border: "1px solid rgba(56,189,248,0.3)",
-              borderRadius: "20px",
-              padding: "32px",
-              width: "min(500px, 92vw)",
-              boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
-            }}
+            className="w-full max-w-lg p-6 sm:p-8 rounded-3xl glass-panel border border-indigo-200 dark:border-cyan-500/30 shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ color: "#38bdf8", fontWeight: 700, fontSize: "1.5rem", marginBottom: "8px" }}>
-              ⚖️ Resolve Dispute
-            </h2>
-            <p style={{ color: "#94a3b8", fontSize: "0.9rem", marginBottom: "20px" }}>
-              Choose whether to release the escrowed funds to the seller or refund them to the buyer.
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-50 dark:bg-cyan-500/10 text-indigo-600 dark:text-cyan-400 border border-indigo-200 dark:border-cyan-500/20">
+                  <HiOutlineScale className="w-5 h-5" />
+                </div>
+                <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">
+                  Resolve Dispute (Arbitration)
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowResolveModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+              >
+                <HiOutlineX className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-6">
+              Choose the arbitration determination: release funds to seller or refund back to buyer.
             </p>
 
-            <div style={{ display: "flex", gap: "10px", marginBottom: "18px" }}>
+            <div className="grid grid-cols-2 gap-3 mb-4">
               <button
                 type="button"
                 id="btn-choose-release"
                 onClick={() => setResolveTarget("RELEASED")}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: "10px",
-                  background: resolveTarget === "RELEASED" ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.03)",
-                  border: `2px solid ${resolveTarget === "RELEASED" ? "#22c55e" : "#334155"}`,
-                  color: resolveTarget === "RELEASED" ? "#4ade80" : "#94a3b8",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  fontSize: "0.95rem",
-                  transition: "all 0.2s",
-                }}
+                className={`p-3.5 rounded-2xl text-xs font-bold transition flex flex-col items-center gap-1.5 cursor-pointer ${
+                  resolveTarget === "RELEASED"
+                    ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-500/60 shadow-md"
+                    : "glass-card-subtle text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/[0.08]"
+                }`}
               >
-                💰 Release to Seller
+                <HiOutlineCheckCircle className="w-5 h-5" />
+                <span>Release to Seller</span>
               </button>
+
               <button
                 type="button"
                 id="btn-choose-refund"
                 onClick={() => setResolveTarget("REFUNDED")}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: "10px",
-                  background: resolveTarget === "REFUNDED" ? "rgba(249,115,22,0.2)" : "rgba(255,255,255,0.03)",
-                  border: `2px solid ${resolveTarget === "REFUNDED" ? "#f97316" : "#334155"}`,
-                  color: resolveTarget === "REFUNDED" ? "#fb923c" : "#94a3b8",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  fontSize: "0.95rem",
-                  transition: "all 0.2s",
-                }}
+                className={`p-3.5 rounded-2xl text-xs font-bold transition flex flex-col items-center gap-1.5 cursor-pointer ${
+                  resolveTarget === "REFUNDED"
+                    ? "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-2 border-orange-500/60 shadow-md"
+                    : "glass-card-subtle text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/[0.08]"
+                }`}
               >
-                🔄 Refund to Buyer
+                <HiOutlineLockClosed className="w-5 h-5" />
+                <span>Refund to Buyer</span>
               </button>
             </div>
 
@@ -738,64 +853,27 @@ function EscrowDetails() {
               id="resolve-note-input"
               value={resolveNote}
               onChange={(e) => setResolveNote(e.target.value)}
-              placeholder="Resolution terms / arbitrator summary (e.g. Work verified according to agreement...)"
+              placeholder="Arbitration findings or settlement summary note..."
               rows={3}
-              style={{
-                width: "100%", boxSizing: "border-box",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(56,189,248,0.3)",
-                borderRadius: "10px",
-                padding: "12px 14px",
-                color: "#f1f5f9",
-                fontSize: "0.9rem",
-                resize: "vertical",
-                outline: "none",
-                marginBottom: "16px",
-              }}
+              className="glass-input w-full p-3 rounded-xl text-xs font-sans mb-3"
             />
 
             {resolveError && (
-              <p style={{ color: "#f87171", fontSize: "0.85rem", marginBottom: "12px" }}>
-                {resolveError}
-              </p>
+              <p className="text-rose-500 text-xs mb-3">{resolveError}</p>
             )}
 
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div className="flex gap-3">
               <button
                 id="btn-confirm-resolve"
                 onClick={handleResolveDispute}
                 disabled={resolveLoading}
-                style={{
-                  flex: 1,
-                  padding: "14px",
-                  borderRadius: "10px",
-                  background: resolveLoading
-                    ? "rgba(56,189,248,0.3)"
-                    : "linear-gradient(135deg, #0284c7, #0369a1)",
-                  border: "none",
-                  color: "#fff",
-                  fontWeight: 700,
-                  cursor: resolveLoading ? "not-allowed" : "pointer",
-                  fontSize: "1rem",
-                  transition: "opacity 0.2s",
-                }}
+                className="btn-shimmer-primary flex-1 py-3 rounded-xl text-xs font-bold"
               >
-                {resolveLoading ? "Processing…" : `Confirm ${resolveTarget === "RELEASED" ? "Release" : "Refund"}`}
+                {resolveLoading ? "Processing..." : `Confirm ${resolveTarget === "RELEASED" ? "Release" : "Refund"}`}
               </button>
               <button
-                id="btn-cancel-resolve"
-                onClick={() => { setShowResolveModal(false); setResolveError(""); }}
-                style={{
-                  flex: 1,
-                  padding: "14px",
-                  borderRadius: "10px",
-                  background: "transparent",
-                  border: "1px solid #334155",
-                  color: "#94a3b8",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  fontSize: "1rem",
-                }}
+                onClick={() => setShowResolveModal(false)}
+                className="btn-glass-secondary px-5 py-3 rounded-xl text-xs font-semibold"
               >
                 Cancel
               </button>
@@ -803,6 +881,7 @@ function EscrowDetails() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -11,4 +11,18 @@ const api = axios.create({
   baseURL: getBaseUrl(),
 });
 
-export default api;
+// Automatically inject JWT authentication token on all requests
+api.interceptors.request.use((config) => {
+  try {
+    const token = localStorage.getItem("shield_escrow_token");
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (err) {
+    console.warn("[API] Could not attach auth token:", err);
+  }
+  return config;
+});
+
+export default api;

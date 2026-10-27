@@ -1,25 +1,20 @@
-/**
- * Phase 3 — NotificationToast
- *
- * Renders a stack of push notifications received over WebSocket.
- * Toasts auto-dismiss after 5 seconds with a smooth slide-in animation.
- *
- * Usage:
- *   import NotificationToast from "./NotificationToast";
- *   <NotificationToast notification={lastNotification} />
- *
- * Props:
- *   notification – EscrowNotification object (or null); a new object triggers a new toast
- */
 import { useEffect, useState, useRef } from "react";
+import { 
+  HiOutlineShieldCheck, 
+  HiOutlineCheckCircle, 
+  HiOutlineLockClosed, 
+  HiOutlineExclamationCircle, 
+  HiOutlineCubeTransparent,
+  HiOutlineX
+} from "react-icons/hi";
 
 const EVENT_META = {
-  CREATED:   { icon: "🆕", color: "#38bdf8", label: "Escrow Created" },
-  FUNDED:    { icon: "💰", color: "#22c55e", label: "Escrow Funded" },
-  COMPLETED: { icon: "✅", color: "#a78bfa", label: "Work Completed" },
-  RELEASED:  { icon: "🚀", color: "#34d399", label: "Funds Released" },
-  DISPUTED:  { icon: "⚠️", color: "#f87171", label: "Dispute Raised" },
-  SYNCED:    { icon: "⛓️", color: "#fb923c", label: "On-Chain Synced" },
+  CREATED:   { icon: <HiOutlineShieldCheck className="w-5 h-5 text-indigo-600 dark:text-cyan-400" />, label: "Escrow Created", border: "border-indigo-200 dark:border-cyan-500/30" },
+  FUNDED:    { icon: <HiOutlineLockClosed className="w-5 h-5 text-amber-500" />, label: "Escrow Funded", border: "border-amber-500/30" },
+  COMPLETED: { icon: <HiOutlineCheckCircle className="w-5 h-5 text-purple-500" />, label: "Work Completed", border: "border-purple-500/30" },
+  RELEASED:  { icon: <HiOutlineCheckCircle className="w-5 h-5 text-emerald-500" />, label: "Funds Released", border: "border-emerald-500/30" },
+  DISPUTED:  { icon: <HiOutlineExclamationCircle className="w-5 h-5 text-rose-500" />, label: "Dispute Raised", border: "border-rose-500/30" },
+  SYNCED:    { icon: <HiOutlineCubeTransparent className="w-5 h-5 text-indigo-500" />, label: "On-Chain Synced", border: "border-indigo-500/30" },
 };
 
 let toastIdCounter = 0;
@@ -28,20 +23,17 @@ export default function NotificationToast({ notification }) {
   const [toasts, setToasts] = useState([]);
   const timersRef = useRef({});
 
-  // Add a new toast every time the notification object changes
   useEffect(() => {
     if (!notification) return;
     const id = ++toastIdCounter;
     const timers = timersRef.current;
     setToasts((prev) => [...prev, { ...notification, _toastId: id }]);
 
-    // Auto-dismiss after 5 s — timer is stored in ref, not the cleanup
     timers[id] = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t._toastId !== id));
       delete timers[id];
-    }, 5000);
+    }, 6000);
 
-    // Cleanup only this toast's timer on unmount, not on re-render
     return () => {
       if (timers[id]) {
         clearTimeout(timers[id]);
@@ -50,113 +42,58 @@ export default function NotificationToast({ notification }) {
     };
   }, [notification]);
 
+  const dismissToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t._toastId !== id));
+    if (timersRef.current[id]) {
+      clearTimeout(timersRef.current[id]);
+      delete timersRef.current[id];
+    }
+  };
+
   if (toasts.length === 0) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: "24px",
-        right: "24px",
-        display: "flex",
-        flexDirection: "column-reverse",
-        gap: "12px",
-        zIndex: 99999,
-        maxWidth: "340px",
-      }}
-    >
+    <div className="fixed bottom-6 right-6 z-[99999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
       {toasts.map((toast) => {
         const meta = EVENT_META[toast.eventType] || {
-          icon: "📋",
-          color: "#94a3b8",
-          label: toast.eventType,
+          icon: <HiOutlineShieldCheck className="w-5 h-5 text-indigo-600 dark:text-cyan-400" />,
+          label: toast.eventType || "Notification",
+          border: "border-indigo-200 dark:border-cyan-500/30",
         };
+
         return (
           <div
             key={toast._toastId}
-            style={{
-              background: "linear-gradient(135deg, #1e293b, #0f172a)",
-              border: `1px solid ${meta.color}55`,
-              borderLeft: `4px solid ${meta.color}`,
-              borderRadius: "14px",
-              padding: "14px 18px",
-              boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${meta.color}22`,
-              animation: "slideInRight 0.35s cubic-bezier(0.34,1.56,0.64,1)",
-              cursor: "pointer",
-            }}
-            onClick={() =>
-              setToasts((prev) =>
-                prev.filter((t) => t._toastId !== toast._toastId)
-              )
-            }
+            className={`pointer-events-auto p-4 rounded-2xl glass-panel ${meta.border} shadow-xl flex items-start gap-3 transform transition-all duration-300 animate-in slide-in-from-bottom-5`}
           >
-            {/* Header row */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginBottom: "6px",
-              }}
-            >
-              <span style={{ fontSize: "1.2rem" }}>{meta.icon}</span>
-              <span
-                style={{
-                  color: meta.color,
-                  fontWeight: 700,
-                  fontSize: "0.9rem",
-                }}
-              >
-                {meta.label}
-              </span>
-              <span
-                style={{
-                  marginLeft: "auto",
-                  color: "#475569",
-                  fontSize: "0.75rem",
-                  cursor: "pointer",
-                }}
-              >
-                ✕
-              </span>
+            <div className="p-2 rounded-xl bg-slate-100 dark:bg-white/[0.05] shrink-0 border border-slate-200/80 dark:border-white/[0.08]">
+              {meta.icon}
             </div>
 
-            {/* Note */}
-            {toast.note && (
-              <p
-                style={{
-                  color: "#cbd5e1",
-                  fontSize: "0.82rem",
-                  margin: 0,
-                  lineHeight: 1.4,
-                }}
-              >
-                {toast.note}
-              </p>
-            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-slate-900 dark:text-white tracking-wide">
+                  {meta.label}
+                </span>
+                <span className="text-[10px] font-mono text-indigo-700 dark:text-cyan-300 bg-indigo-50 dark:bg-cyan-500/10 px-1.5 py-0.5 rounded">
+                  Escrow #{toast.escrowId}
+                </span>
+              </div>
 
-            {/* Escrow ID */}
-            <p
-              style={{
-                color: "#475569",
-                fontSize: "0.75rem",
-                margin: "4px 0 0",
-                fontFamily: "monospace",
-              }}
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-2 leading-relaxed">
+                {toast.message || `State transition to ${toast.status}`}
+              </p>
+            </div>
+
+            <button
+              onClick={() => dismissToast(toast._toastId)}
+              className="text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg transition cursor-pointer"
             >
-              Escrow #{toast.escrowId}
-            </p>
+              <HiOutlineX className="w-4 h-4" />
+            </button>
           </div>
         );
       })}
-
-      {/* Keyframe injection */}
-      <style>{`
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(60px) scale(0.9); }
-          to   { opacity: 1; transform: translateX(0) scale(1); }
-        }
-      `}</style>
     </div>
   );
 }

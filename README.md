@@ -2,34 +2,82 @@
 
 # 🛡️ ShieldEscrow
 
-### Enterprise-Grade, Privacy-First Decentralized Escrow Platform
+### Enterprise-Grade, Zero-Knowledge Escrow Protocol with AI-Powered Deliverable Verification
 
-**Trustless peer-to-peer settlement powered by Midnight Zero-Knowledge Smart Contracts.**
+**Trustless peer-to-peer settlement powered by Midnight ZK Smart Contracts & Google Gemini 3.5 Flash AI Arbitration.**
 
-[![Live Application](https://img.shields.io/badge/Live_Deployment-shield--escrow.vercel.app-00C7B7?style=for-the-badge&logo=vercel&logoColor=white)](https://shield-escrow.vercel.app/)
+[![Live Application](https://img.shields.io/badge/Live_DApp-ShieldEscrow-00C7B7?style=for-the-badge&logo=vercel&logoColor=white)](http://localhost:5173)
 [![React](https://img.shields.io/badge/Frontend-React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![Spring Boot](https://img.shields.io/badge/Backend-Spring_Boot_3.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Database](https://img.shields.io/badge/Database-MySQL_/_MariaDB-003545?style=for-the-badge&logo=mysql&logoColor=white)](https://mariadb.org/)
-[![Midnight](https://img.shields.io/badge/Blockchain-Midnight_Network-7C3AED?style=for-the-badge)](https://midnight.network/)
-[![Docker](https://img.shields.io/badge/Containers-Docker_Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-
-**🌐 Production Deployment:** [https://shield-escrow.vercel.app](https://shield-escrow.vercel.app/)
+[![Midnight](https://img.shields.io/badge/Blockchain-Midnight_Preprod-7C3AED?style=for-the-badge)](https://midnight.network/)
+[![AI Engine](https://img.shields.io/badge/AI_Arbitrator-Gemini_3.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![Tailwind](https://img.shields.io/badge/Styling-Tailwind_v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
 </div>
 
 ---
 
-## 📌 Executive Summary
+## 📌 Overview
 
-**ShieldEscrow** is a decentralized escrow protocol engineered to eliminate counterparty risk and intermediaries in peer-to-peer commerce and service agreements. 
+**ShieldEscrow** is a decentralized, privacy-first escrow protocol engineered to eliminate counterparty risk and payment disputes in digital commerce, freelance development, and B2B contracts.
 
-Traditional payment systems rely on expensive third-party arbiters, centralized custody, and opaque processes. ShieldEscrow replaces centralized custody with **Midnight Zero-Knowledge smart contracts**, guaranteeing that capital remains cryptographically locked until mutually agreed deliverables are fulfilled. Built-in multi-stage state transitions, dispute arbitration, and immutable audit logs deliver non-repudiation and commercial privacy.
+Traditional escrow services charge **3%–10% in fees**, take **5–14 business days** to settle, and rely on human arbiters who lack the technical expertise to inspect software, codebases, or APIs. 
+
+ShieldEscrow solves this by pairing:
+1. **Midnight Zero-Knowledge Smart Contracts** for non-custodial capital locking.
+2. **A Common Treaty Session** where buyers and sellers agree on explicit, machine-readable acceptance criteria before work begins.
+3. **Google Gemini 3.5 Flash AI Engine** that inspects the seller's submitted deliverable link against every agreed rule, granting a **Green Signal** to authorize instant payout.
+
+---
+
+## ⚡ The 4-Step Trustless Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    THE SHIELDESCROW WORKFLOW                                    │
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+ 1. COMMON SESSION          2. CAPITAL & RULES         3. DELIVERABLE LINK        4. GREEN SIGNAL
+ [Buyer & Seller]           [Buyer Action]             [Seller Action]            [Gemini AI Engine]
+         │                          │                          │                          │
+  Both parties sign up       Buyer locks funds in       Seller completes work      Gemini audits link
+  with verified Gmail/ID     Midnight ZK escrow         and pastes public link     against all rules.
+  and join shared room       and sets explicit          (GitHub repo, demo app,    Green signal auto-
+  via invite link.           inspection criteria.       or release artifact).      releases the payout!
+         │                          │                          │                          │
+         ▼                          ▼                          ▼                          ▼
+ ┌───────────────┐          ┌───────────────┐          ┌───────────────┐          ┌───────────────┐
+ │ BUY-xxxxxx    │ ───────▶ │ Funds Locked  │ ───────▶ │ Link: https://│ ───────▶ │ ✅ Score: 98% │
+ │ SEL-xxxxxx    │          │ Rules Active  │          │ github.com/...│          │ Payout Settled│
+ └───────────────┘          └───────────────┘          └───────────────┘          └───────────────┘
+```
+
+---
+
+## 🚀 Core Features
+
+### 1. Dual-Sided Shared Treaty Sessions
+* **Buyer View**: Deposits capital, defines rules/rubric, and monitors AI arbitration.
+* **Seller View**: Reviews agreed criteria, submits deliverable link with delivery walkthrough notes, and triggers AI verification.
+* **One-Click Treaty Link**: Buyers generate a shareable session invite (`/escrow/:id`) allowing the counterparty to bind their seller identity to the contract.
+
+### 2. AI Escrow Arbitrator & Verification Engine
+* Powered directly by **Google Gemini 3.5 Flash**.
+* Strictly audits public deliverable links against written contract rules.
+* Produces an itemized **Criteria Evaluation Rubric** scoring each requirement (0–100%).
+* **Green Signal**: On passing score, automatically authorizes state change to `AI_APPROVED` / `COMPLETED`.
+
+### 3. Verified Multi-Tenant Authentication
+* **Strict Gmail Validation**: Enforces legitimate Google accounts (`@gmail.com`).
+* **Custom Usernames**: Optional unique `@handle` for human-readable identity.
+* **Standardized Identity IDs**: Deterministic `USR-XXXXXX`, `BUY-XXXXXX`, and `SEL-XXXXXX` identifiers guaranteeing privacy and non-repudiation.
+
+### 4. Midnight Network Zero-Knowledge Integration
+* Zero-knowledge proofs prevent counterparty eavesdropping on transaction values and private addresses.
+* Compatible with the Midnight Preprod testnet and Midnight Lace / DApp Connector extension.
 
 ---
 
 ## 🏛️ System Architecture
-
-ShieldEscrow employs a hybrid on-chain / off-chain architecture designed for sub-second user responsiveness and zero-knowledge on-chain finality:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -40,266 +88,99 @@ ShieldEscrow employs a hybrid on-chain / off-chain architecture designed for sub
                    ▼ (REST / JSON)                   ▼ (ZK Proofs / RPC)
 ┌──────────────────────────────────────┐  ┌──────────────────────────────┐
 │          API & Gateway Tier          │  │       Blockchain Tier        │
-│  • Vercel Edge Serverless Functions  │  │  • Midnight Preprod Network  │
-│  • Spring Boot 3.3 Microservice      │  │  • Compact Smart Contracts   │
-│  • WebSocket STOMP Event Broker      │  │  • ZK Proof Server (Port 6300│
+│  • Vite Integrated Node Handlers     │  │  • Midnight Preprod Network  │
+│  • Gemini 3.5 Flash Arbitration API  │  │  • Compact Smart Contracts   │
+│  • Claude Code Proxy Bridge (:3456)  │  │  • ZK Proof Server (:6300)   │
 └──────────────────┬───────────────────┘  └──────────────┬───────────────┘
                    │                                     │
                    ▼ (Persistent Storage)                ▼ (State Records)
 ┌──────────────────────────────────────┐  ┌──────────────────────────────┐
 │           Persistence Tier           │  │      On-Chain Ledgers        │
-│  • Aiven Managed MySQL / MariaDB 11  │  │  • escrows: Map<ID, Escrow>  │
-│  • Immutable `escrow_events` Audit   │  │  • nextEscrowId: Uint<32>    │
+│  • MySQL / MariaDB 11 Database       │  │  • escrows: Map<ID, Escrow>  │
+│  • In-Memory Zero-Config Fallback    │  │  • immutable audit events    │
 └──────────────────────────────────────┘  └──────────────────────────────┘
 ```
 
-### Core Architecture Components:
+---
 
-| Tier | Technology | Purpose |
-|---|---|---|
-| **Frontend** | React 19, Vite 8, Tailwind CSS v4 | High-performance user interface, real-time counters, responsive dashboard |
-| **Wallet Connector** | CIP-30 & Midnight DApp API | Auto-discovers Lace, Nightly, Eternl, Nami, Flint with dev-mode failover |
-| **Serverless API** | Vercel Edge Serverless Functions | Global edge-cached REST endpoints connecting directly to cloud persistence |
-| **Enterprise API** | Java 21, Spring Boot 3.3, JPA | High-throughput backend with WebSocket broadcasting and email alerting |
-| **Persistence** | Aiven Cloud MySQL / MariaDB 11 | Relational state machine storage with automated schema synchronization |
-| **Smart Contract** | Midnight Compact (v0.23+) | Zero-knowledge cryptographic escrow lock, release, dispute, and refund |
+## 🛠️ Tech Stack
+
+* **Frontend**: React 19, Vite 8, Tailwind CSS v4, React Router 7, React Icons
+* **AI Engine**: Google Gemini 3.5 Flash (`generateContent` with JSON output schemas)
+* **Blockchain**: Midnight Preprod Testnet, Compact ZK Contract Language, `@midnight-ntwrk/dapp-connector-api`
+* **Backend**: Node.js ES Modules with integrated Vite API middleware
+* **Security & Auth**: Bcrypt.js, JSON Web Tokens (JWT), Strict Gmail Pattern Validation
 
 ---
 
-## 🔄 Escrow State Machine & Lifecycle Flow
+## 📦 Getting Started
 
-Every escrow follows a deterministic, tamper-resistant finite state machine:
+### Prerequisites
+* **Node.js** v20+ or v24+
+* **Google Gemini API Key** ([Get one at Google AI Studio](https://aistudio.google.com/))
 
-```
-            ┌─────────────────────────────────────────┐
-            │                 CREATED                 │
-            │  Buyer deposits funds into escrow lock  │
-            └────────────────────┬────────────────────┘
-                                 │
-                                 ▼
-            ┌─────────────────────────────────────────┐
-            │             WORK COMPLETED              │
-            │     Seller delivers agreed services     │
-            └────────────┬───────────────────────┬────┘
-                         │                       │
-      [Buyer Approves]   │                       │  [Disagreement]
-                         ▼                       ▼
-            ┌──────────────────────┐   ┌──────────────────────┐
-            │       RELEASED       │   │       DISPUTED       │
-            │ Funds paid to Seller │   │ Escrow locked/frozen │
-            └──────────────────────┘   └──────────┬───────────┘
-                                                  │
-                                        [Arbitration Decision]
-                                                  │
-                                 ┌────────────────┴────────────────┐
-                                 ▼                                 ▼
-                      ┌──────────────────────┐          ┌──────────────────────┐
-                      │   RESOLVED: RELEASE  │          │   RESOLVED: REFUND   │
-                      │  Settled to Seller   │          │  Returned to Buyer   │
-                      └──────────────────────┘          └──────────────────────┘
-```
-
----
-
-## ⚡ Key Capabilities
-
-### 🛡️ Cryptographic Trust & Privacy
-- **Zero-Knowledge Execution:** Powered by Midnight Compact smart contracts ensuring on-chain verification without leaking private business metadata.
-- **Atomic Settlement:** Funds cannot be siphoned or redirected; release is governed strictly by cryptographic authorization.
-
-### 👛 Universal Wallet Interoperability
-- **Native Extension Detection:** Automatic discovery of injected browser providers (`window.midnight` and `window.cardano`).
-- **Supported Wallets:** Lace, Nightly, Eternl, Nami, Flint, and Typhon.
-- **Graceful Sandbox Mode:** Automatic sandbox wallet provider enabling seamless testing in environments without browser extensions.
-
-### ⚖️ Dispute Resolution & Arbitration
-- **One-Click Freeze:** Disputed agreements immediately transition to `DISPUTED`, locking the funds against unilateral withdrawals.
-- **Bilateral Arbitration:** Support for structured resolution pathways: awarding payment to the provider or remitting a full refund to the buyer.
-
-### 📜 Immutable Audit Trails
-- **Event Journal:** Every status change, signature, and approval creates an unalterable `EscrowEvent` timestamped with the actor address.
-- **On-Chain Synchronization:** Ability to link on-chain transaction hashes directly to the corresponding database record.
-
----
-
-## 🔌 REST API Specification
-
-The platform exposes unified REST endpoints available across both the serverless cloud edge and Spring Boot deployments:
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/escrows` | Retrieve list of all escrows |
-| `POST` | `/api/escrows` | Initialize and fund a new escrow agreement |
-| `GET` | `/api/escrows/{id}` | Retrieve comprehensive escrow details by ID |
-| `POST` | `/api/escrows/{id}/complete` | Mark work as delivered by seller |
-| `POST` | `/api/escrows/{id}/approve` | Release locked funds to seller |
-| `POST` | `/api/escrows/{id}/dispute` | Initiate dispute and freeze escrow |
-| `POST` | `/api/escrows/{id}/resolve-dispute` | Arbitrate dispute (`RELEASE` to seller or `REFUND` to buyer) |
-| `GET` | `/api/escrows/{id}/events` | Retrieve complete audit trail for compliance verification |
-| `POST` | `/api/escrows/{id}/sync-onchain` | Associate on-chain transaction hash with escrow record |
-
----
-
-## ⛓️ Smart Contract Circuits (`escrow.compact`)
-
-The Midnight Compact contract implements four state circuits:
-
-```compact
-struct Escrow {
-    buyer:       Opaque<"string">;
-    seller:      Opaque<"string">;
-    amount:      Opaque<"string">;
-    description: Opaque<"string">;
-    status:      Uint<8>; // 0: CREATED, 1: COMPLETED, 2: RELEASED, 3: DISPUTED, 4: REFUNDED
-}
-```
-
-| Circuit | Inputs | State Transition | Description |
-|---|---|---|---|
-| `createEscrow` | `buyer, seller, amount, description` | `→ 0 (CREATED)` | Allocates auto-increment ID, records deposit |
-| `getStatus` | `escrowId` | Read-only | Returns current byte state of the escrow |
-| `releaseEscrow` | `escrowId` | `→ 2 (RELEASED)` | Validates authorization and releases funds |
-| `disputeEscrow` | `escrowId` | `→ 3 (DISPUTED)` | Locks funds pending arbitrator determination |
-| `refundEscrow` | `escrowId` | `→ 4 (REFUNDED)` | Remits full escrow balance back to buyer |
-
----
-
-## 📁 Repository Structure
-
-```
-ShieldEscrow/
-│
-├── frontend/                  # Modern React 19 Single-Page Application
-│   ├── api/                   # Production Serverless API routes (Edge MySQL connection)
-│   ├── src/
-│   │   ├── components/        # Navbar, EscrowCard, WalletPickerModal, ActivityTimeline, Toast
-│   │   ├── pages/             # Dashboard, CreateEscrow, EscrowDetails, Landing
-│   │   ├── context/           # WalletContext provider with CIP-30 extension detection
-│   │   ├── services/          # Unified Axios client & transaction signing protocol
-│   │   └── hooks/             # WebSocket notification hooks
-│   ├── Dockerfile             # Multi-stage production Nginx image
-│   ├── vercel.json            # Edge routing and SPA rewrite rules
-│   └── nginx.conf             # Production reverse proxy configuration
-│
-├── trustpay/                  # Enterprise Spring Boot Backend
-│   ├── src/main/java/
-│   │   ├── controller/        # EscrowController REST API
-│   │   ├── service/           # EscrowService, EmailNotificationService
-│   │   ├── model/             # Escrow, EscrowEvent, EscrowStatus entities
-│   │   ├── repository/        # Spring Data JPA interfaces
-│   │   └── config/            # CORS & WebSocket STOMP broker configuration
-│   └── Dockerfile             # Multi-stage Eclipse Temurin Java 21 image
-│
-├── trustpay-midnight/         # Midnight Smart Contracts & TypeScript Tooling
-│   ├── contracts/             # escrow.compact smart contract
-│   ├── src/                   # deploy.ts, cli.ts, network.ts, wallet.ts
-│   └── tsconfig.json          # TypeScript configuration
-│
-├── docker-compose.yml         # Containerized production stack (MariaDB + Backend + Frontend)
-├── DOCKER.md                  # Comprehensive Docker Compose operations guide
-└── MIDNIGHT_TESTNET.md        # Midnight Preprod network deployment guide
-```
-
----
-
-## 🚀 Quickstart Guide
-
-### Option 1: Docker Compose (All-In-One Local Deployment)
-
-Spin up the entire architecture (MariaDB, Spring Boot Backend, and Nginx Frontend) with a single command:
-
+### 1. Clone & Install
 ```bash
-docker compose up -d --build
-```
-
-- **Frontend Application:** `http://localhost:80`
-- **Backend API:** `http://localhost:8080`
-- **Database (MariaDB):** `localhost:3306`
-
-*See [DOCKER.md](DOCKER.md) for health checks, environment parameters, and container troubleshooting.*
-
----
-
-### Option 2: Local Development Setup
-
-#### 1. Database Provisioning
-```sql
-CREATE DATABASE shieldescrow CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-#### 2. Start Frontend
-```bash
-cd frontend
+git clone https://github.com/prajwal-dn/ShieldEscrow.git
+cd ShieldEscrow/frontend
 npm install
+```
+
+### 2. Environment Configuration
+Copy `.env.example` in the project root to `.env`:
+```bash
+cp .env.example .env
+```
+Add your credentials:
+```env
+GEMINI_API_KEY=your_google_gemini_api_key_here
+GEMINI_MODEL=gemini-3.5-flash
+JWT_SECRET=your_jwt_secret_key_minimum_32_chars
+```
+
+### 3. Launch Development Server
+```bash
 npm run dev
 ```
-Accessible at `http://localhost:5173`.
-
-#### 3. Start Spring Boot Backend (Optional)
-```bash
-cd trustpay
-./mvnw clean spring-boot:run
-```
-Accessible at `http://localhost:8080`.
-
-#### 4. Midnight Smart Contract Tooling
-```bash
-cd trustpay-midnight
-npm install
-npm run build
-npm run deploy    # Deploy to Midnight Preprod Testnet
-npm run cli       # Interactive CLI for creating and inspecting on-chain escrows
-```
-
-*See [MIDNIGHT_TESTNET.md](MIDNIGHT_TESTNET.md) for testnet faucet, proof server configuration, and contract verification details.*
+Open **`http://localhost:5173`** in your browser.
 
 ---
 
-## 🔒 Security & Environment Variables
+## 📋 What All Changes Are Needed to Make It Production-Ready
 
-| Variable | Scope | Description |
-|---|---|---|
-| `DATABASE_URL` | Serverless / Backend | JDBC / MySQL connection string (`mysql://user:pass@host:port/db`) |
-| `SPRING_DATASOURCE_USERNAME` | Backend | Database credentials |
-| `SPRING_DATASOURCE_PASSWORD` | Backend | Database credentials |
-| `MIDNIGHT_CONTRACT_ADDRESS` | Backend / Midnight | Deployed Midnight Compact contract address |
-| `BLOCKFROST_PROJECT_ID` | Midnight Preprod | Blockfrost API key for public Midnight Preprod indexer/RPC |
-| `VITE_API_URL` | Frontend | External backend URL (leave blank for same-origin serverless routing) |
+While ShieldEscrow's core architecture and AI-driven escrow workflow are fully implemented and functional, the following production-grade enhancements are recommended before deploying with mainnet financial capital:
 
----
+### 1. Timed Inspection Window (Safety Buffer)
+* **Current**: AI Green Signal triggers instant settlement.
+* **Production Recommendation**: Implement a **24–48 hour challenge window** after the Green Signal. 
+  - If the buyer confirms, payment is released immediately.
+  - If the buyer does nothing, funds auto-release after 48h (protecting sellers against ghosting).
+  - If contested, the AI evaluation serves as primary objective evidence for human/multi-sig arbiters.
 
-## 📋 Platform Audit & Implementation Roadmap (Unfinished / Planned Tasks)
+### 2. CI/CD & GitHub Webhook Verification (Anti-Spoofing)
+* **Current**: Seller submits a public URL (e.g. GitHub repo link).
+* **Production Recommendation**: Integrate GitHub OAuth / Webhooks to programmatically verify:
+  - Commit SHA ownership
+  - Automated test execution logs (`npm test` / CI pipeline exit code 0)
+  - Release artifact hashes
 
-Following an end-to-end architectural scan of the frontend, backend serverless functions, database tier, and Midnight smart contract toolchain, below is the comprehensive audit of completed foundations versus remaining planned milestones for market launch:
+### 3. Prompt Injection Defense & Sandboxed Code Review
+* **Current**: Direct prompt framing to Gemini 3.5 Flash.
+* **Production Recommendation**: Strip and sanitize submitted repositories to prevent adversarial prompt injection (e.g., hidden instructions in markdown files attempting to force `passed: true`).
 
-### 1. Identity & Account Management
-| Item | Current Status | Planned Implementation | Priority |
-|---|---|---|---|
-| **Gmail / Email Registration** | ✅ Client Auth & Standardized Issuance | Integrate Google OAuth 2.0 (Google Identity Services) for 1-click Gmail verification alongside current credential flow | High |
-| **Standardized User IDs** | ✅ Implemented (`USR-XXXXXX`, `BUY-XXXXXX`, `SEL-XXXXXX`) | Persist user profiles and standardized identities across cloud database tables (`users` relational schema) | High |
-| **Session & Token Auth** | ✅ Local secure storage session | Issue cryptographically signed JWT session tokens via edge middleware | Medium |
+### 4. Database Persistence Hardening
+* **Current**: Resilient hybrid architecture using MySQL pool with in-memory zero-config fallback.
+* **Production Recommendation**: Deploy a managed cloud database (e.g. Supabase Postgres, Neon, or AWS RDS MySQL) with automated daily snapshots and encrypted connection pooling.
 
-### 2. Product Inspection & Acceptance Protocol
-| Item | Current Status | Planned Implementation | Priority |
-|---|---|---|---|
-| **Inspection Standards Tab** | ✅ Implemented in UI | Allow buyers and sellers to mutually sign off on inspection criteria prior to initial funding | High |
-| **Inspection Period Timer** | ✅ Stored (e.g. 72h window) | Background worker / cron job to automatically trigger release if buyer fails to raise objections before window expiry | High |
-| **Proof of Delivery Assets** | ✅ Metadata field captured | Decentralized attachment upload (IPFS / Arweave / S3) for inspection photos, signed receipts, and code archives | Medium |
+### 5. Multi-Sig Arbiter DAO
+* **Current**: Direct buyer/seller dispute resolution.
+* **Production Recommendation**: Introduce a 2-of-3 multi-signature dispute resolution scheme involving an elected community arbitrator or oracle for contested claims.
 
-### 3. Midnight Smart Contract Integration
-| Item | Current Status | Planned Implementation | Priority |
-|---|---|---|---|
-| **Compact Contract Circuits** | ✅ 100% Compiled & Deployed on Ledger | Maintain circuit compatibility across upcoming Midnight ledger-v9 releases | Maintained |
-| **Proof Server Infrastructure** | ✅ Docker proof server verified | Deploy high-availability proof server container in cloud Kubernetes/ECS for production proof generation | High |
-| **Web Browser Wallet Direct Sign** | ⚠️ Dev/CIP-30 mode with CLI bridge | Implement native Midnight browser extension (Lace / Nightly Midnight) dApp connector once Midnight wallet APIs finalize on mainnet | High |
-| **Frontend-to-Midnight API Bridge** | ⚠️ Managed via TypeScript CLI / scripts | Expose a microservice endpoint connecting the web frontend directly to the Midnight proof server and indexer | High |
-
-### 4. Dispute Resolution & Platform Governance
-| Item | Current Status | Planned Implementation | Priority |
-|---|---|---|---|
-| **Dispute Filing & Reason Logging** | ✅ Fully functional on-chain & in DB | Multi-stage dispute escalation with buyer/seller rebuttal rounds | Medium |
-| **Arbitration Settlement** | ✅ Admin resolution modal | Decentralized arbitration panel (2-of-3 multi-signature settlement or Kleros integration) | Future |
-| **Transactional Email / SMS Alerts** | ⚠️ WebSocket real-time only | SendGrid / AWS SES email dispatch to buyer and seller on status transitions | Medium |
+### 6. Midnight Mainnet Transition
+* **Current**: Configured for Midnight Preprod testnet using `tNight` test tokens.
+* **Production Recommendation**: Audit the Compact smart contracts and deploy to Midnight Mainnet upon mainnet launch.
 
 ---
 
+## 📄 License
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.

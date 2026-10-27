@@ -1,9 +1,385 @@
 @import "tailwindcss";
 
-nav a {
-  transition: all 0.25s ease;
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-display: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* Light Theme Tokens */
+    --bg-page: #f8fafc;
+    --bg-page-subtle: #f1f5f9;
+    --bg-surface: rgba(255, 255, 255, 0.88);
+    --bg-surface-elevated: #ffffff;
+    --bg-surface-interactive: #ffffff;
+    
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --text-subtle: #94a3b8;
+    
+    --border-subtle: rgba(15, 23, 42, 0.08);
+    --border-strong: rgba(15, 23, 42, 0.16);
+    --border-accent: rgba(79, 70, 229, 0.4);
+
+    --shadow-soft: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+    --shadow-elevated: 0 16px 36px -8px rgba(15, 23, 42, 0.1), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+
+    --input-bg: rgba(255, 255, 255, 0.95);
+    --input-border: rgba(15, 23, 42, 0.12);
+    --input-text: #0f172a;
+
+    --badge-bg-neutral: rgba(15, 23, 42, 0.05);
+    --badge-text-neutral: #334155;
+    --badge-border-neutral: rgba(15, 23, 42, 0.1);
+  }
+
+  .dark {
+    /* Dark Theme Tokens (Obsidian / Midnight) */
+    --bg-page: #07090e;
+    --bg-page-subtle: #0d111b;
+    --bg-surface: rgba(14, 19, 32, 0.78);
+    --bg-surface-elevated: rgba(20, 28, 48, 0.9);
+    --bg-surface-interactive: rgba(18, 25, 42, 0.85);
+
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-subtle: #64748b;
+
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --border-accent: rgba(99, 102, 241, 0.45);
+
+    --shadow-soft: 0 16px 36px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+    --shadow-elevated: 0 24px 50px -12px rgba(0, 0, 0, 0.85), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+
+    --input-bg: rgba(9, 13, 24, 0.8);
+    --input-border: rgba(255, 255, 255, 0.1);
+    --input-text: #f8fafc;
+
+    --badge-bg-neutral: rgba(255, 255, 255, 0.06);
+    --badge-text-neutral: #cbd5e1;
+    --badge-border-neutral: rgba(255, 255, 255, 0.12);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    overflow-x: hidden;
+    min-height: 100vh;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
 }
 
-nav a:hover {
-  color: #38bdf8 !important;
+/* ─────────────────────────────────────────────────────────────
+   TACTILE & FROSTED GLASS SURFACE SYSTEM (ANTI-SLOP)
+   ───────────────────────────────────────────────────────────── */
+
+.glass-panel {
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass-panel-interactive {
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-interactive:hover {
+  background: var(--bg-surface-interactive);
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevated);
+}
+
+.glass-card-subtle {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+/* Glass Inputs */
+.glass-input {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--input-text);
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+
+.glass-input::placeholder {
+  color: var(--text-subtle);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DESIGN SPELLS & TACTILE BUTTONS
+   ───────────────────────────────────────────────────────────── */
+
+/* Primary Action Button (Tactile, Non-AI) */
+.btn-shimmer-primary {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  color: #ffffff;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dark .btn-shimmer-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  box-shadow: 0 4px 20px 0 rgba(99, 102, 241, 0.4);
+}
+
+.btn-shimmer-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  transition: all 0.75s ease;
+}
+
+.btn-shimmer-primary:hover::before {
+  left: 150%;
+}
+
+.btn-shimmer-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px 0 rgba(79, 70, 229, 0.45);
+}
+
+.btn-shimmer-primary:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+/* Secondary Button */
+.btn-glass-secondary {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-weight: 600;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-glass-secondary:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-strong);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.btn-glass-secondary:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+/* Emerald Action Button */
+.btn-shimmer-emerald {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 14px 0 rgba(5, 150, 105, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-shimmer-emerald:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px 0 rgba(5, 150, 105, 0.45);
+}
+
+.btn-shimmer-emerald:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+/* Danger Button */
+.btn-glass-danger {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dark .btn-glass-danger {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.btn-glass-danger:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.btn-glass-danger:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TEXTURE & SUBTLE AMBIENT CANVAS (RESTRAINED, NON-AI)
+   ───────────────────────────────────────────────────────────── */
+
+.ambient-bg {
+  position: relative;
+  background-color: var(--bg-page);
+  transition: background-color 0.25s ease;
+}
+
+/* Subtle architectural grid pattern */
+.bg-grid-pattern {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+}
+
+.dark .bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* Refined Gradient Text (Confident, not chaotic) */
+.gradient-text-vivid {
+  background: linear-gradient(135deg, #0f172a 30%, #4338ca 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .gradient-text-vivid {
+  background: linear-gradient(135deg, #ffffff 40%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Badges */
+.glow-badge-emerald {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #059669;
+}
+
+.dark .glow-badge-emerald {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.glow-badge-amber {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #d97706;
+}
+
+.dark .glow-badge-amber {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.glow-badge-cyan {
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  color: #0284c7;
+}
+
+.dark .glow-badge-cyan {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.glow-badge-purple {
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  color: #7e22ce;
+}
+
+.dark .glow-badge-purple {
+  color: #c084fc;
+  border-color: rgba(192, 132, 252, 0.3);
+}
+
+.glow-badge-rose {
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  color: #e11d48;
+}
+
+.dark .glow-badge-rose {
+  color: #fb7185;
+  border-color: rgba(251, 113, 133, 0.3);
+}
+
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-page);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-subtle);
 }

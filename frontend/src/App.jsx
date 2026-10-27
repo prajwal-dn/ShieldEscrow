@@ -5,7 +5,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import EscrowDetails from "./pages/EscrowDetails.jsx";
 import Landing from "./pages/Landing.jsx";
 import AuthModal from "./components/AuthModal.jsx";
-
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
 
 function App() {
@@ -13,32 +13,40 @@ function App() {
     <BrowserRouter>
       <AuthModal />
       <Routes>
+        {/* Public Route: Only Home Screen is visible until logged in */}
         <Route path="/" element={<Landing />} />
 
+        {/* Protected Routes: Only accessible once authenticated */}
         <Route
           path="/dashboard"
           element={
-            <DashboardLayout>
-              <Dashboard />
-            </DashboardLayout>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Dashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/create"
           element={
-            <DashboardLayout>
-              <CreateEscrow />
-            </DashboardLayout>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <CreateEscrow />
+              </DashboardLayout>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/escrow/:id"
           element={
-            <DashboardLayout>
-              <EscrowDetails />
-            </DashboardLayout>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <EscrowDetails />
+              </DashboardLayout>
+            </ProtectedRoute>
           }
         />
       </Routes>

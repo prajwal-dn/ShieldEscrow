@@ -1,15 +1,27 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { 
+  HiOutlineX, 
+  HiOutlineMail, 
+  HiOutlineLockClosed, 
+  HiOutlineUser, 
+  HiOutlineCheck,
+  HiOutlineClipboardCopy,
+  HiOutlineSparkles,
+  HiOutlineAtSymbol
+} from "react-icons/hi";
 
 export default function AuthModal() {
-  const { authModalOpen, setAuthModalOpen, authMode, setAuthMode, login, register, user } = useAuth();
+  const { authModalOpen, setAuthModalOpen, authMode, setAuthMode, login, register } = useAuth();
 
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [successInfo, setSuccessInfo] = useState(null);
+  const [copiedKey, setCopiedKey] = useState(null);
 
   if (!authModalOpen) return null;
 
@@ -18,12 +30,22 @@ export default function AuthModal() {
     setError("");
     setLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
+
     try {
       if (authMode === "register") {
-        const newUser = await register(email, password, name);
+        // Enforce strict Gmail address validation
+        const isGmail = /^[a-z0-9](\.?[a-z0-9]){4,}@(gmail|googlemail)\.com$/i.test(cleanEmail);
+        if (!isGmail) {
+          setError("Please enter a valid official Gmail address (e.g., yourname@gmail.com). Only Gmail IDs are accepted.");
+          setLoading(false);
+          return;
+        }
+
+        const newUser = await register(cleanEmail, password, name, username);
         setSuccessInfo(newUser);
       } else {
-        await login(email, password);
+        await login(email.trim(), password);
       }
     } catch (err) {
       setError(err.message || "Authentication failed");
@@ -37,311 +59,310 @@ export default function AuthModal() {
     setSuccessInfo(null);
     setError("");
     setEmail("");
+    setUsername("");
     setPassword("");
     setName("");
   };
 
+  const handleCopy = (key, text) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(10, 15, 30, 0.85)",
-        backdropFilter: "blur(6px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 9999,
-        padding: "16px",
-      }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
       onClick={handleClose}
     >
       <div
-        style={{
-          background: "#0f172a",
-          border: "1px solid #1e293b",
-          borderRadius: "16px",
-          width: "100%",
-          maxWidth: "460px",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
-          padding: "32px",
-          color: "#f8fafc",
-          position: "relative",
-        }}
+        className="w-full max-w-md p-6 sm:p-8 rounded-3xl glass-panel border border-slate-200/90 dark:border-cyan-500/20 shadow-2xl relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={handleClose}
-          style={{
-            position: "absolute",
-            top: "18px",
-            right: "18px",
-            background: "none",
-            border: "none",
-            color: "#94a3b8",
-            fontSize: "22px",
-            cursor: "pointer",
-          }}
+          className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
+          aria-label="Close"
         >
-          ✕
+          <HiOutlineX className="w-5 h-5" />
         </button>
 
         {successInfo ? (
           <div>
-            <div style={{ textAlign: "center", marginBottom: "20px" }}>
-              <div style={{ fontSize: "48px", marginBottom: "8px" }}>🎉</div>
-              <h3 style={{ fontSize: "22px", margin: "0 0 6px 0", color: "#38bdf8" }}>
-                Account Successfully Created!
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-tr from-indigo-500 to-indigo-600 p-[1px] shadow-lg shadow-indigo-500/20">
+                <div className="w-full h-full bg-slate-900 dark:bg-[#080d1a] rounded-2xl flex items-center justify-center">
+                  <HiOutlineSparkles className="w-7 h-7 text-indigo-400 dark:text-cyan-400" />
+                </div>
+              </div>
+              <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white tracking-tight">
+                Account Verified & Activated
               </h3>
-              <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0 }}>
-                Your standardized identity credentials for ShieldEscrow:
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                Your standardized identity credentials for trustless settlement:
               </p>
             </div>
 
-            <div
-              style={{
-                background: "#1e293b",
-                borderRadius: "12px",
-                padding: "18px",
-                marginBottom: "24px",
-                border: "1px solid #334155",
-              }}
-            >
-              <div style={{ marginBottom: "12px" }}>
-                <span style={{ fontSize: "12px", color: "#94a3b8", display: "block" }}>
-                  STANDARD USER ID
-                </span>
-                <span style={{ fontSize: "18px", fontWeight: "700", color: "#f8fafc", fontFamily: "monospace" }}>
-                  {successInfo.userId}
-                </span>
-              </div>
+            <div className="p-4 rounded-2xl glass-card-subtle border border-slate-200/80 dark:border-white/[0.08] space-y-3 mb-6">
+              {/* Username Tag */}
+              {successInfo.username && (
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100/80 dark:bg-black/30 border border-slate-200/60 dark:border-white/[0.04]">
+                  <div>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                      Custom Username
+                    </span>
+                    <span className="text-sm font-mono font-bold text-indigo-600 dark:text-cyan-300">
+                      @{successInfo.username}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleCopy("handle", `@${successInfo.username}`)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-300 transition cursor-pointer"
+                    title="Copy Username"
+                  >
+                    {copiedKey === "handle" ? <HiOutlineCheck className="w-4 h-4 text-emerald-500" /> : <HiOutlineClipboardCopy className="w-4 h-4" />}
+                  </button>
+                </div>
+              )}
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "12px", borderTop: "1px solid #334155", paddingTop: "12px" }}>
+              {/* User ID */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100/80 dark:bg-black/30 border border-slate-200/60 dark:border-white/[0.04]">
                 <div>
-                  <span style={{ fontSize: "11px", color: "#38bdf8", display: "block", fontWeight: "600" }}>
-                    BUYER ID
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                    Standard User ID
                   </span>
-                  <span style={{ fontSize: "15px", fontWeight: "600", fontFamily: "monospace", color: "#cbd5e1" }}>
-                    {successInfo.buyerId}
+                  <span className="text-sm font-mono font-bold text-indigo-600 dark:text-cyan-300">
+                    {successInfo.userId}
                   </span>
                 </div>
-                <div>
-                  <span style={{ fontSize: "11px", color: "#a855f7", display: "block", fontWeight: "600" }}>
-                    SELLER ID
-                  </span>
-                  <span style={{ fontSize: "15px", fontWeight: "600", fontFamily: "monospace", color: "#cbd5e1" }}>
-                    {successInfo.sellerId}
-                  </span>
+                <button
+                  onClick={() => handleCopy("user", successInfo.userId)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-300 transition cursor-pointer"
+                  title="Copy User ID"
+                >
+                  {copiedKey === "user" ? <HiOutlineCheck className="w-4 h-4 text-emerald-500" /> : <HiOutlineClipboardCopy className="w-4 h-4" />}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-black/30 border border-slate-200/60 dark:border-white/[0.04] flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-mono text-indigo-600 dark:text-cyan-400 uppercase tracking-wider block">
+                      Buyer ID
+                    </span>
+                    <span className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200">
+                      {successInfo.buyerId}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleCopy("buyer", successInfo.buyerId)}
+                    className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-300 transition cursor-pointer"
+                  >
+                    {copiedKey === "buyer" ? <HiOutlineCheck className="w-3.5 h-3.5 text-emerald-500" /> : <HiOutlineClipboardCopy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-black/30 border border-slate-200/60 dark:border-white/[0.04] flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400 uppercase tracking-wider block">
+                      Seller ID
+                    </span>
+                    <span className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200">
+                      {successInfo.sellerId}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleCopy("seller", successInfo.sellerId)}
+                    className="p-1 rounded text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 transition cursor-pointer"
+                  >
+                    {copiedKey === "seller" ? <HiOutlineCheck className="w-3.5 h-3.5 text-emerald-500" /> : <HiOutlineClipboardCopy className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
               </div>
 
-              <div style={{ marginTop: "12px", borderTop: "1px solid #334155", paddingTop: "12px" }}>
-                <span style={{ fontSize: "11px", color: "#94a3b8", display: "block" }}>
-                  REGISTERED EMAIL
+              <div className="p-2 text-center">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Verified Gmail: <span className="text-slate-800 dark:text-slate-200 font-medium">{successInfo.email}</span>
                 </span>
-                <span style={{ fontSize: "14px", color: "#e2e8f0" }}>{successInfo.email}</span>
               </div>
             </div>
 
             <button
               onClick={handleClose}
-              style={{
-                width: "100%",
-                padding: "12px",
-                background: "linear-gradient(135deg, #0284c7, #2563eb)",
-                border: "none",
-                borderRadius: "8px",
-                color: "white",
-                fontWeight: "600",
-                fontSize: "15px",
-                cursor: "pointer",
-              }}
+              className="btn-shimmer-primary w-full py-3 rounded-xl text-sm font-semibold"
             >
-              Continue to ShieldEscrow
+              Enter ShieldEscrow Portal
             </button>
           </div>
         ) : (
           <div>
-            {/* Header Tabs */}
-            <div style={{ display: "flex", gap: "8px", marginBottom: "24px", borderBottom: "1px solid #1e293b", paddingBottom: "12px" }}>
+            {/* Tab switch */}
+            <div className="flex p-1 rounded-2xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/[0.06] mb-6">
               <button
                 type="button"
                 onClick={() => { setAuthMode("login"); setError(""); }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "18px",
-                  fontWeight: authMode === "login" ? "700" : "500",
-                  color: authMode === "login" ? "#38bdf8" : "#94a3b8",
-                  cursor: "pointer",
-                  padding: "4px 8px",
-                  borderBottom: authMode === "login" ? "2px solid #38bdf8" : "none",
-                }}
+                className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all duration-200 cursor-pointer ${
+                  authMode === "login"
+                    ? "bg-white dark:bg-indigo-500/30 text-indigo-700 dark:text-cyan-300 border border-slate-200 dark:border-cyan-500/30 shadow-sm"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
               >
                 Sign In
               </button>
               <button
                 type="button"
                 onClick={() => { setAuthMode("register"); setError(""); }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "18px",
-                  fontWeight: authMode === "register" ? "700" : "500",
-                  color: authMode === "register" ? "#38bdf8" : "#94a3b8",
-                  cursor: "pointer",
-                  padding: "4px 8px",
-                  borderBottom: authMode === "register" ? "2px solid #38bdf8" : "none",
-                }}
+                className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all duration-200 cursor-pointer ${
+                  authMode === "register"
+                    ? "bg-white dark:bg-indigo-500/30 text-indigo-700 dark:text-cyan-300 border border-slate-200 dark:border-cyan-500/30 shadow-sm"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
               >
-                Create Account
+                Register with Gmail
               </button>
             </div>
 
-            <p style={{ color: "#94a3b8", fontSize: "14px", marginTop: "-12px", marginBottom: "20px" }}>
-              {authMode === "register"
-                ? "Sign up with your Gmail to obtain your standardized User, Buyer, and Seller IDs."
-                : "Enter your Gmail ID or User ID (e.g. USR-XXXXXX) and password to access the platform."}
-            </p>
+            <div className="mb-6">
+              <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white tracking-tight">
+                {authMode === "register" ? "Create Verified Escrow Identity" : "Welcome Back"}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                {authMode === "register"
+                  ? "Register with an official Gmail ID and create a custom username for trustless treaty coordination."
+                  : "Sign in with your Gmail address, custom username (@handle), or User ID."}
+              </p>
+            </div>
 
             {error && (
-              <div
-                style={{
-                  background: "rgba(239, 68, 68, 0.15)",
-                  border: "1px solid #ef4444",
-                  borderRadius: "8px",
-                  padding: "10px 14px",
-                  color: "#fca5a5",
-                  fontSize: "13px",
-                  marginBottom: "16px",
-                }}
-              >
+              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs mb-4">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Registration Specific Fields */}
               {authMode === "register" && (
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>
-                    Full Name / Organization
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Alice Crypto or Acme Corp"
-                    style={{
-                      width: "100%",
-                      padding: "11px 14px",
-                      background: "#1e293b",
-                      border: "1px solid #334155",
-                      borderRadius: "8px",
-                      color: "white",
-                      fontSize: "14px",
-                      outline: "none",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                </div>
+                <>
+                  {/* Custom Username Field */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Create Custom Username
+                      </label>
+                      <span className="text-[10px] font-mono text-indigo-600 dark:text-cyan-400 font-semibold">
+                        Unique Handle
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <HiOutlineAtSymbol className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                        placeholder="e.g. alex_vance or crypto_builder"
+                        className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-mono"
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block font-mono">
+                      Letters, numbers, underscores (3–24 chars)
+                    </span>
+                  </div>
+
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Full Name or Entity Name (Optional)
+                    </label>
+                    <div className="relative">
+                      <HiOutlineUser className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. Alex Vance or Acme Corp"
+                        className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs"
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>
-                  {authMode === "register" ? "Gmail Address" : "Gmail or User ID"}
-                </label>
-                <input
-                  type={authMode === "register" ? "email" : "text"}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={authMode === "register" ? "yourname@gmail.com" : "yourname@gmail.com or USR-123456"}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "11px 14px",
-                    background: "#1e293b",
-                    border: "1px solid #334155",
-                    borderRadius: "8px",
-                    color: "white",
-                    fontSize: "14px",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                />
+              {/* Email / Gmail Field */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {authMode === "register" ? "Official Gmail Address" : "Gmail, Username, or User ID"}
+                  </label>
+                  {authMode === "register" && (
+                    <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      @gmail.com only
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type={authMode === "register" ? "email" : "text"}
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={authMode === "register" ? "yourname@gmail.com" : "name@gmail.com, @username, or USR-123456"}
+                    className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-mono"
+                  />
+                </div>
               </div>
 
-              <div style={{ marginBottom: "24px" }}>
-                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Password
                 </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimum 6 characters"
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "11px 14px",
-                    background: "#1e293b",
-                    border: "1px solid #334155",
-                    borderRadius: "8px",
-                    color: "white",
-                    fontSize: "14px",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                />
+                <div className="relative">
+                  <HiOutlineLockClosed className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Min 6 characters"
+                    className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs"
+                  />
+                </div>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  background: loading
-                    ? "#334155"
-                    : "linear-gradient(135deg, #0284c7, #2563eb)",
-                  border: "none",
-                  borderRadius: "8px",
-                  color: "white",
-                  fontWeight: "600",
-                  fontSize: "15px",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  transition: "opacity 0.2s",
-                }}
+                className="btn-shimmer-primary w-full py-3 rounded-xl text-xs font-semibold mt-2 cursor-pointer"
               >
-                {loading
-                  ? "Processing..."
-                  : authMode === "register"
-                  ? "Create Standardized Account"
-                  : "Sign In"}
+                {loading ? "Processing..." : authMode === "register" ? "Register with Gmail & Username" : "Sign In to Portal"}
               </button>
             </form>
 
-            <div style={{ textAlign: "center", marginTop: "18px", fontSize: "13px", color: "#94a3b8" }}>
+            <div className="mt-4 pt-4 border-t border-slate-200/80 dark:border-white/[0.06] text-center">
               {authMode === "register" ? (
-                <>
-                  Already registered?{" "}
-                  <span
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  Already have an escrow account?{" "}
+                  <button
+                    type="button"
                     onClick={() => { setAuthMode("login"); setError(""); }}
-                    style={{ color: "#38bdf8", cursor: "pointer", fontWeight: "600" }}
+                    className="text-indigo-600 dark:text-cyan-400 font-semibold hover:underline cursor-pointer"
                   >
-                    Sign In
-                  </span>
-                </>
+                    Sign in
+                  </button>
+                </p>
               ) : (
-                <>
-                  Don't have an account?{" "}
-                  <span
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  Need a verified escrow account?{" "}
+                  <button
+                    type="button"
                     onClick={() => { setAuthMode("register"); setError(""); }}
-                    style={{ color: "#38bdf8", cursor: "pointer", fontWeight: "600" }}
+                    className="text-indigo-600 dark:text-cyan-400 font-semibold hover:underline cursor-pointer"
                   >
-                    Create Account via Gmail
-                  </span>
-                </>
+                    Register with Gmail
+                  </button>
+                </p>
               )}
             </div>
           </div>

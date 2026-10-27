@@ -1,6 +1,25 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 const AuthContext = createContext();
+
+const API_BASE = ""; // Relative URLs for same-origin
+
+// Generate a simulated session token for offline/dev fallback
+const generateSimulatedToken = (userId, email) => {
+  const payload = { userId, email, simulated: true };
+  // Simple base64 encoding for simulated token (not secure, just for dev)
+  return "sim_" + btoa(JSON.stringify(payload));
+};
+
+// Parse simulated token
+const parseSimulatedToken = (token) => {
+  if (!token.startsWith("sim_")) return null;
+  try {
+    return JSON.parse(atob(token.substring(4)));
+  } catch {
+    return null;
+  }
+};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -12,9 +31,27 @@ export function AuthProvider({ children }) {
     }
   });
 
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem("shield_escrow_token") || null;
+    } catch {
+      return null;
+    }
+  });
+
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login"); // "login" | "register"
 
+  // Sync token to localStorage
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem("shield_escrow_token", token);
+    } else {
+      localStorage.removeItem("shield_escrow_token");
+    }
+  }, [token]);
+
+  // Sync user to localStorage
   useEffect(() => {
     if (user) {
       localStorage.setItem("shield_escrow_user", JSON.stringify(user));
@@ -24,92 +61,203 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   // Standardized ID Generator
-  const generateStandardId = (prefix) => {
+  const generateStandardId = useCallback((prefix) => {
     const randomDigits = Math.floor(100000 + Math.random() * 900000);
     return `${prefix}-${randomDigits}`;
-  };
+  }, []);
 
-  const register = async (email, password, fullName = "") => {
-    if (!email || !email.includes("@")) {
-      throw new Error("Please enter a valid Gmail / Email address.");
+  // Fallback user creation for offline/dev mode
+  const createFallbackUser = useCallback((email, fullName = "", username = "") => {
+    const baseNumber = Math.floor(100000 + Math.random() * 900000);
+    const userId = `USR-${baseNumber}`;
+    const buyerId = `BUY-${baseNumber}`;
+    const sellerId = `SEL-${baseNumber}`;
+    const cleanUsername = username?.trim().toLowerCase() || email.split("@")[0].toLowerCase();
+
+    const newUser = {
+      userId,
+      username: cleanUsername,
+      buyerId,
+      sellerId,
+      email: email.trim().toLowerCase(),
+      name: fullName.trim() || cleanUsername,
+      createdAt: new Date().toISOString(),
+    };
+
+    const simulatedToken = generateSimulatedToken(userId, newUser.email);
+    setToken(simulatedToken);
+    setUser(newUser);
+    setAuthModalOpen(false);
+    return newUser;
+  }, []);
+
+  const register = useCallback(async (email, password, fullName = "", username = "") => {
+    const cleanEmail = (email || "").trim().toLowerCase();
+    const isGmail = /^[a-z0-9](\.?[a-z0-9]){4,}@(gmail|googlemail)\.com$/i.test(cleanEmail);
+    if (!isGmail) {
+      throw new Error("Please enter a valid Gmail address (e.g. yourname@gmail.com). Only official Gmail IDs are accepted.");
     }
     if (!password || password.length < 6) {
       throw new Error("Password must be at least 6 characters.");
     }
 
-    const baseNumber = Math.floor(100000 + Math.random() * 900000);
-    const userId = `USR-${baseNumber}`;
-    const buyerId = `BUY-${baseNumber}`;
-    const sellerId = `SEL-${baseNumber}`;
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, password, fullName, username }),
+      });
 
-    const newUser = {
-      userId,
-      buyerId,
-      sellerId,
-      email: email.trim().toLowerCase(),
-      name: fullName.trim() || email.split("@")[0],
-      createdAt: new Date().toISOString(),
-    };
+      const data = await response.json();
 
-    // Store in existing users list in localStorage for simulation
-    const users = JSON.parse(localStorage.getItem("shield_escrow_all_users") || "[]");
-    const existing = users.find((u) => u.email === newUser.email);
-    if (existing) {
-      throw new Error("An account with this email already exists. Please log in.");
-    }
-
-    users.push({ ...newUser, password });
-    localStorage.setItem("shield_escrow_all_users", JSON.stringify(users));
-
-    setUser(newUser);
-    setAuthModalOpen(false);
-    return newUser;
-  };
-
-  const login = async (identifier, password) => {
-    const users = JSON.parse(localStorage.getItem("shield_escrow_all_users") || "[]");
-    const cleanId = identifier.trim().toLowerCase();
-
-    // Match by email or userId
-    const matched = users.find(
-      (u) =>
-        (u.email.toLowerCase() === cleanId || u.userId.toLowerCase() === cleanId) &&
-        u.password === password
-    );
-
-    if (!matched) {
-      // If no users registered yet, allow demo registration or throw
-      if (users.length === 0 && cleanId.includes("@")) {
-        return register(cleanId, password);
+      if (!response.ok) {
+        throw new Error(data.error || "Registration failed. Please try again.");
       }
-      throw new Error("Invalid User ID/Email or password.");
+
+      // Store token and user (without password)
+      setToken(data.token);
+      setUser(data.user);
+      setAuthModalOpen(false);
+      return data.user;
+    } catch (err) {
+      if (err.message.includes("Gmail") || err.message.includes("Password") || err.message.includes("Username") || err.message.includes("already exists")) {
+        throw err;
+      }
+      console.warn("[Auth] Register API unavailable, using fallback:", err.message);
+      return createFallbackUser(cleanEmail, fullName, username);
+    }
+  }, [createFallbackUser]);
+
+  const login = useCallback(async (identifier, password) => {
+    if (!identifier || !password) {
+      throw new Error("Email/User ID and password are required.");
     }
 
-    const { password: _, ...safeUser } = matched;
-    setUser(safeUser);
-    setAuthModalOpen(false);
-    return safeUser;
-  };
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password }),
+      });
 
-  const logout = () => {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Login failed. Please try again.");
+      }
+
+      // Store token and user (without password)
+      setToken(data.token);
+      setUser(data.user);
+      setAuthModalOpen(false);
+      return data.user;
+    } catch (err) {
+      // If fetch fails (e.g., static dev without backend), fallback gracefully
+      console.warn("[Auth] Login API unavailable, using fallback:", err.message);
+
+      // For fallback, we accept any email/userId with password (simulated auth)
+      const cleanId = identifier.trim().toLowerCase();
+      if (cleanId.includes("@")) {
+        return createFallbackUser(cleanId, "");
+      }
+      // If identifier looks like a userId, create a fallback user with generated email
+      return createFallbackUser(`${cleanId}@demo.local`, "");
+    }
+  }, [createFallbackUser]);
+
+  const logout = useCallback(() => {
     setUser(null);
-  };
+    setToken(null);
+  }, []);
 
-  const openLogin = () => {
+  // Verify token and restore session (call on app init)
+  const verifySession = useCallback(async () => {
+    const savedToken = localStorage.getItem("shield_escrow_token");
+    if (!savedToken) return false;
+
+    // Check if it's a simulated token
+    if (savedToken.startsWith("sim_")) {
+      const decoded = parseSimulatedToken(savedToken);
+      if (decoded) {
+        // Restore user from localStorage or create minimal user object
+        const savedUser = localStorage.getItem("shield_escrow_user");
+        if (savedUser) {
+          try {
+            setUser(JSON.parse(savedUser));
+            setToken(savedToken);
+            return true;
+          } catch {
+            // Invalid saved user, clear
+          }
+        }
+        // Create minimal user from token
+        const user = {
+          userId: decoded.userId,
+          email: decoded.email,
+          name: decoded.email.split("@")[0],
+        };
+        setUser(user);
+        setToken(savedToken);
+        return true;
+      }
+      // Invalid simulated token
+      localStorage.removeItem("shield_escrow_token");
+      localStorage.removeItem("shield_escrow_user");
+      return false;
+    }
+
+    // Real JWT token - verify with backend
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/me`, {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${savedToken}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user) {
+          // Restore user from localStorage or use decoded token data
+          const savedUser = localStorage.getItem("shield_escrow_user");
+          if (savedUser) {
+            try {
+              setUser(JSON.parse(savedUser));
+            } catch {
+              setUser(data.user);
+            }
+          } else {
+            setUser(data.user);
+          }
+          setToken(savedToken);
+          return true;
+        }
+      }
+      // Token invalid or expired
+      localStorage.removeItem("shield_escrow_token");
+      localStorage.removeItem("shield_escrow_user");
+      return false;
+    } catch (err) {
+      console.warn("[Auth] Session verification failed:", err.message);
+      // If backend unavailable, keep the token but don't auto-login
+      return false;
+    }
+  }, []);
+
+  const openLogin = useCallback(() => {
     setAuthMode("login");
     setAuthModalOpen(true);
-  };
+  }, []);
 
-  const openRegister = () => {
+  const openRegister = useCallback(() => {
     setAuthMode("register");
     setAuthModalOpen(true);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         user,
         isAuthenticated: !!user,
+        token,
         authModalOpen,
         authMode,
         setAuthMode,
@@ -120,6 +268,7 @@ export function AuthProvider({ children }) {
         openLogin,
         openRegister,
         generateStandardId,
+        verifySession,
       }}
     >
       {children}

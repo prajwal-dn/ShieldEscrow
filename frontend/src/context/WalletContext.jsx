@@ -9,10 +9,12 @@ export function WalletProvider({ children }) {
   const [walletApi, setWalletApi] = useState(null);
   const [connected, setConnected] = useState(false);
   const [address, setAddress]     = useState("");
+  const [walletError, setWalletError] = useState("");
   const [showPicker, setShowPicker] = useState(false);
 
   const connectWith = useCallback(async (walletDef) => {
     setShowPicker(false);
+    setWalletError("");
     try {
       let resolvedAddress = "";
       let resolvedApi = null;
@@ -32,17 +34,21 @@ export function WalletProvider({ children }) {
         resolvedApi = api;
       }
 
+      if (!resolvedAddress) {
+        throw new Error("Wallet connected but no address was returned.");
+      }
+
       setWallet(walletDef);
       setWalletApi(resolvedApi);
-      setAddress(resolvedAddress || "midnight_preprod1_connected");
+      setAddress(resolvedAddress);
       setConnected(true);
     } catch (err) {
-      console.warn("Wallet connection failed:", err.message);
-      // Graceful dev-mode fallback so the UI stays functional
-      setWallet(walletDef);
+      console.error("Wallet connection failed:", err.message);
+      setWallet(null);
       setWalletApi(null);
-      setAddress("midnight_preprod1_dev_" + walletDef.key);
-      setConnected(true);
+      setAddress("");
+      setConnected(false);
+      setWalletError(err.message || "Failed to connect wallet. Please try again.");
     }
   }, []);
 
@@ -80,6 +86,8 @@ export function WalletProvider({ children }) {
         setConnected,
         address,
         setAddress,
+        walletError,
+        setWalletError,
         initiateConnect,
         disconnect,
       }}
