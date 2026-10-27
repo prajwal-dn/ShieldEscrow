@@ -14,11 +14,11 @@ export default async function handler(req, res) {
 
     const cleanEmail = (email || "").trim().toLowerCase();
 
-    // Strict Gmail ID Validation: only accept actual @gmail.com or @googlemail.com
-    const gmailPattern = /^[a-z0-9](\.?[a-z0-9]){4,}@(gmail|googlemail)\.com$/i;
-    if (!cleanEmail || !gmailPattern.test(cleanEmail)) {
+    // Strict Email Address Validation (RFC 5322 compliant with valid TLD requirement)
+    const emailPattern = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+    if (!cleanEmail || !emailPattern.test(cleanEmail)) {
       return res.status(400).json({
-        error: "Please enter a valid Gmail address (e.g., yourname@gmail.com). Only official Gmail IDs are accepted.",
+        error: "Please enter a valid email address (e.g., name@example.com).",
       });
     }
 
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     const existing = await findUserByEmailOrId(cleanEmail);
     if (existing) {
       return res.status(409).json({
-        error: "An account with this Gmail address already exists. Please log in.",
+        error: "An account with this email address already exists. Please log in.",
       });
     }
 

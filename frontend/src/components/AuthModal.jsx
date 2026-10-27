@@ -34,10 +34,10 @@ export default function AuthModal() {
 
     try {
       if (authMode === "register") {
-        // Enforce strict Gmail address validation
-        const isGmail = /^[a-z0-9](\.?[a-z0-9]){4,}@(gmail|googlemail)\.com$/i.test(cleanEmail);
-        if (!isGmail) {
-          setError("Please enter a valid official Gmail address (e.g., yourname@gmail.com). Only Gmail IDs are accepted.");
+        // Enforce strict email address validation
+        const emailPattern = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+        if (!cleanEmail || !emailPattern.test(cleanEmail)) {
+          setError("Please enter a valid email address (e.g., name@example.com).");
           setLoading(false);
           return;
         }
@@ -183,7 +183,7 @@ export default function AuthModal() {
 
               <div className="p-2 text-center">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Verified Gmail: <span className="text-slate-800 dark:text-slate-200 font-medium">{successInfo.email}</span>
+                  Verified Email: <span className="text-slate-800 dark:text-slate-200 font-medium">{successInfo.email}</span>
                 </span>
               </div>
             </div>
@@ -219,7 +219,7 @@ export default function AuthModal() {
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
-                Register with Gmail
+                Register Account
               </button>
             </div>
 
@@ -229,8 +229,8 @@ export default function AuthModal() {
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
                 {authMode === "register"
-                  ? "Register with an official Gmail ID and create a custom username for trustless treaty coordination."
-                  : "Sign in with your Gmail address, custom username (@handle), or User ID."}
+                  ? "Register with a valid email address and create a custom username for trustless treaty coordination."
+                  : "Sign in with your email address, custom username (@handle), or User ID."}
               </p>
             </div>
 
@@ -288,15 +288,15 @@ export default function AuthModal() {
                 </>
               )}
 
-              {/* Email / Gmail Field */}
+              {/* Email Field */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    {authMode === "register" ? "Official Gmail Address" : "Gmail, Username, or User ID"}
+                    {authMode === "register" ? "Email Address" : "Email, Username, or User ID"}
                   </label>
                   {authMode === "register" && (
                     <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                      @gmail.com only
+                      Valid email required
                     </span>
                   )}
                 </div>
@@ -307,7 +307,7 @@ export default function AuthModal() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={authMode === "register" ? "yourname@gmail.com" : "name@gmail.com, @username, or USR-123456"}
+                    placeholder={authMode === "register" ? "name@example.com" : "name@example.com, @username, or USR-123456"}
                     className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-mono"
                   />
                 </div>
@@ -336,7 +336,7 @@ export default function AuthModal() {
                 disabled={loading}
                 className="btn-shimmer-primary w-full py-3 rounded-xl text-xs font-semibold mt-2 cursor-pointer"
               >
-                {loading ? "Processing..." : authMode === "register" ? "Register with Gmail & Username" : "Sign In to Portal"}
+                {loading ? "Processing..." : authMode === "register" ? "Register Escrow Account" : "Sign In to Portal"}
               </button>
             </form>
 
@@ -360,7 +360,7 @@ export default function AuthModal() {
                     onClick={() => { setAuthMode("register"); setError(""); }}
                     className="text-indigo-600 dark:text-cyan-400 font-semibold hover:underline cursor-pointer"
                   >
-                    Register with Gmail
+                    Register Account
                   </button>
                 </p>
               )}

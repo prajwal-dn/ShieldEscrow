@@ -93,9 +93,9 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (email, password, fullName = "", username = "") => {
     const cleanEmail = (email || "").trim().toLowerCase();
-    const isGmail = /^[a-z0-9](\.?[a-z0-9]){4,}@(gmail|googlemail)\.com$/i.test(cleanEmail);
-    if (!isGmail) {
-      throw new Error("Please enter a valid Gmail address (e.g. yourname@gmail.com). Only official Gmail IDs are accepted.");
+    const emailPattern = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+    if (!cleanEmail || !emailPattern.test(cleanEmail)) {
+      throw new Error("Please enter a valid email address (e.g. name@example.com).");
     }
     if (!password || password.length < 6) {
       throw new Error("Password must be at least 6 characters.");
