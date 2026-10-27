@@ -2,8 +2,8 @@
 // Called when seller clicks the invite link. Returns escrow contract details.
 // POST /api/escrows/join — seller registers themselves as the seller on the contract.
 
-import { getEscrowByInviteToken, updateEscrowField, logEvent, findUserByEmailOrId } from "../_db.js";
-import { verifyAuth, applyCors } from "../_auth.js";
+import { getEscrowByInviteToken, updateEscrowField, logEvent, findUserByEmailOrId } from "../../_db.js";
+import { verifyAuth, applyCors } from "../../_auth.js";
 
 export default async function handler(req, res) {
   applyCors(req, res);

@@ -1,5 +1,5 @@
-import { getAllEscrows, createEscrow, findUserByEmailOrId } from "../_db.js";
-import { verifyAuth, applyCors } from "../_auth.js";
+import { getAllEscrows, createEscrow, findUserByEmailOrId } from "../../_db.js";
+import { verifyAuth, applyCors } from "../../_auth.js";
 
 export default async function handler(req, res) {
   applyCors(req, res);

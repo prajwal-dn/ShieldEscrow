@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { findUserByEmailOrId } from "../_db.js";
+import { findUserByEmailOrId } from "../../_db.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "shield-escrow-jwt-secret-key-32chars-min";
 

@@ -1,36 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/api/escrows/:id/verify-delivery",
-      "destination": "/api/escrows/[id]/verify-delivery"
-    },
-    {
-      "source": "/api/escrows/:id/approve",
-      "destination": "/api/escrows/[id]/approve"
-    },
-    {
-      "source": "/api/escrows/:id/complete",
-      "destination": "/api/escrows/[id]/complete"
-    },
-    {
-      "source": "/api/escrows/:id/dispute",
-      "destination": "/api/escrows/[id]/dispute"
-    },
-    {
-      "source": "/api/escrows/:id/resolve-dispute",
-      "destination": "/api/escrows/[id]/resolve-dispute"
-    },
-    {
-      "source": "/api/escrows/:id/events",
-      "destination": "/api/escrows/[id]/events"
-    },
-    {
-      "source": "/api/escrows/:id/sync-onchain",
-      "destination": "/api/escrows/[id]/sync-onchain"
-    },
-    {
-      "source": "/api/escrows/:id",
-      "destination": "/api/escrows/[id]/index"
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
     },
     {
       "source": "/((?!api/).*)",
