@@ -2,36 +2,28 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "shield-escrow-jwt-secret-key-32chars-min";
 
-export async function GET(req) {
+export default async function handler(req, res) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
-    const authHeader = req.headers.get("Authorization");
+    const authHeader = req.headers.authorization || req.headers["authorization"];
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Missing or invalid Authorization header" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return res.status(401).json({ error: "Missing or invalid Authorization header" });
     }
 
-    const token = authHeader.substring(7); // Remove "Bearer " prefix
+    const token = authHeader.substring(7);
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
-      return new Response(JSON.stringify({ user: decoded }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      return res.status(200).json({ user: decoded });
     } catch {
-      return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return res.status(401).json({ error: "Invalid or expired token" });
     }
   } catch (err) {
     console.error("[Auth] Me error:", err);
-    return new Response(JSON.stringify({ error: "Authentication check failed" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return res.status(500).json({ error: "Authentication check failed" });
   }
 }

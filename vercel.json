@@ -1,0 +1,48 @@
+{
+  "framework": "vite",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "cd frontend && npm install",
+  "rewrites": [
+    {
+      "source": "/api/escrows/:id/verify-delivery",
+      "destination": "/frontend/api/escrows/[id]/verify-delivery"
+    },
+    {
+      "source": "/api/escrows/:id/approve",
+      "destination": "/frontend/api/escrows/[id]/approve"
+    },
+    {
+      "source": "/api/escrows/:id/complete",
+      "destination": "/frontend/api/escrows/[id]/complete"
+    },
+    {
+      "source": "/api/escrows/:id/dispute",
+      "destination": "/frontend/api/escrows/[id]/dispute"
+    },
+    {
+      "source": "/api/escrows/:id/resolve-dispute",
+      "destination": "/frontend/api/escrows/[id]/resolve-dispute"
+    },
+    {
+      "source": "/api/escrows/:id/events",
+      "destination": "/frontend/api/escrows/[id]/events"
+    },
+    {
+      "source": "/api/escrows/:id/sync-onchain",
+      "destination": "/frontend/api/escrows/[id]/sync-onchain"
+    },
+    {
+      "source": "/api/escrows/:id",
+      "destination": "/frontend/api/escrows/[id]/index"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/frontend/api/$1"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/frontend/dist/index.html"
+    }
+  ]
+}

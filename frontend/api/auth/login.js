@@ -4,55 +4,44 @@ import { findUserByEmailOrId } from "../_db.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "shield-escrow-jwt-secret-key-32chars-min";
 
-export async function POST(req) {
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
-    const { identifier, password } = await req.json();
+    const { identifier, password } = req.body || {};
 
     if (!identifier || !password) {
-      return new Response(JSON.stringify({ error: "Email/User ID and password are required." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return res.status(400).json({ error: "Email/User ID and password are required." });
     }
 
-    // Find user by email or userId
+    // Find user by email, username, or userId
     const cleanId = identifier.trim().toLowerCase();
     const user = await findUserByEmailOrId(cleanId);
 
     if (!user) {
-      return new Response(JSON.stringify({ error: "Invalid User ID/Email or password." }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return res.status(401).json({ error: "Invalid User ID/Email or password." });
     }
 
     // Compare password
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
-      return new Response(JSON.stringify({ error: "Invalid User ID/Email or password." }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return res.status(401).json({ error: "Invalid User ID/Email or password." });
     }
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.userId, email: user.email },
+      { userId: user.userId, username: user.username, email: user.email },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     // Return user object (without password) and token
     const { passwordHash: _, ...safeUser } = user;
-    return new Response(JSON.stringify({ user: safeUser, token }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return res.status(200).json({ user: safeUser, token });
   } catch (err) {
     console.error("[Auth] Login error:", err);
-    return new Response(JSON.stringify({ error: "Login failed. Please try again." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return res.status(500).json({ error: "Login failed. Please try again." });
   }
 }
