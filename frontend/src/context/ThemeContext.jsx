@@ -7,9 +7,9 @@ export function ThemeProvider({ children }) {
     try {
       const saved = localStorage.getItem("shield_escrow_theme");
       if (saved === "light" || saved === "dark") return saved;
-      return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      return "light"; // Default theme is white (light mode)
     } catch {
-      return "dark";
+      return "light";
     }
   });
 
